@@ -12,7 +12,7 @@ import org.foranly.craftify.client.lyrics.LyricsManager;
 import org.foranly.craftify.client.lyrics.LyricsPosition;
 
 /**
- * Lyrics submenu (F10 -> "Lyrics options" or {@code /craftify lyrics}): toggles the local
+ * Lyrics submenu (F10 -> "Lyrics options" or {@code /larper lyrics}): toggles the local
  * lyrics overlay, whether the current line is shared with other players (the server renders
  * it as a hologram) and the overlay position on the screen.
  */

@@ -105,7 +105,7 @@ public final class LrclibClient {
         return CompletableFuture.supplyAsync(() -> fetch(artist, track), EXECUTOR);
     }
 
-    /** Searches LRCLib asynchronously (for {@code /craftify lyrics search}). */
+    /** Searches LRCLib asynchronously (for {@code /larper lyrics search}). */
     public static CompletableFuture<SearchOutcome> searchAsync(String query) {
         return CompletableFuture.supplyAsync(() -> {
             // Must go through searchRawQ (URL-encoded): the raw query passed straight to

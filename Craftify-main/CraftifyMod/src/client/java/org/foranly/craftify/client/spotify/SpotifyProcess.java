@@ -298,7 +298,7 @@ public final class SpotifyProcess {
     }
 
     /**
-     * Diagnostic for {@code /craftify spotify}: explains why the bundled nowplaying-cli is
+     * Diagnostic for {@code /larper spotify}: explains why the bundled nowplaying-cli is
      * (or is not) available and shows its raw output, so the macOS read chain can be
      * inspected on the player's machine.
      */

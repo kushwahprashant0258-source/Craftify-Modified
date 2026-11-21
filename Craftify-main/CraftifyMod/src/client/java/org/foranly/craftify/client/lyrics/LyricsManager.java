@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Lyrics are fetched asynchronously from LRCLib (no key) and cached per song. The
  * overlay is drawn as a Fabric HUD element near the bottom of the screen and toggled with
- * {@code /craftify lyrics}.
+ * {@code /larper lyrics}.
  */
 public final class LyricsManager {
 
@@ -564,7 +564,7 @@ public final class LyricsManager {
         return chunks;
     }
 
-    // --- Diagnostics for /craftify spotify ---
+    // --- Diagnostics for /larper spotify ---
 
     /** One of: "", "loading", "loaded", "not_found", "instrumental". */
     public String fetchStatus() {

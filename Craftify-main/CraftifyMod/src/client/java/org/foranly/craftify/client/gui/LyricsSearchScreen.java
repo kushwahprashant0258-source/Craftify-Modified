@@ -14,9 +14,9 @@ import org.foranly.craftify.client.lyrics.LrclibClient.SearchOutcome;
 import org.foranly.craftify.client.lyrics.LyricsManager;
 
 /**
- * Lyrics search submenu (F10 -> "Lyrics search" or {@code /craftify lyrics search}): a
+ * Lyrics search submenu (F10 -> "Lyrics search" or {@code /larper lyrics search}): a
  * search box against LRCLib and the candidates as clickable buttons. Clicking a candidate
- * prints its details to the chat (same info the {@code /craftify lyrics search} command
+ * prints its details to the chat (same info the {@code /larper lyrics search} command
  * shows), for debugging why the auto-match may miss.
  */
 public final class LyricsSearchScreen extends Screen {

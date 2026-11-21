@@ -21,7 +21,7 @@ import org.foranly.craftify.client.spotify.SpotifyProcess;
 import org.foranly.craftify.client.spotify.SpotifyTracker;
 
 /**
- * {@code /craftify spotify} command: verifies that the mod correctly detects the Spotify
+ * {@code /larper spotify} command: verifies that the mod correctly detects the Spotify
  * process and reads its playback state and current song on the current operating system.
  */
 public final class SpotifyCommand {
@@ -30,7 +30,7 @@ public final class SpotifyCommand {
     }
 
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
-        dispatcher.register(ClientCommandManager.literal("craftify")
+        dispatcher.register(ClientCommandManager.literal("larper")
                 .then(ClientCommandManager.literal("menu")
                         .executes(ctx -> {
                             Minecraft.getInstance().setScreen(new CraftifyMenuScreen());
@@ -107,7 +107,7 @@ public final class SpotifyCommand {
         if (paused) {
             source.sendFeedback(Component.literal("[Larper🥀] Packet sending paused.")
                     .withStyle(ChatFormatting.YELLOW));
-            source.sendFeedback(Component.literal("[Larper🥀] Use /craftify send on to resume.")
+            source.sendFeedback(Component.literal("[Larper🥀] Use /larper send on to resume.")
                     .withStyle(ChatFormatting.GRAY));
         } else {
             source.sendFeedback(Component.literal("[Larper🥀] Packet sending resumed.")
@@ -123,13 +123,13 @@ public final class SpotifyCommand {
         LyricsManager lyrics = LyricsManager.instance();
         feedback.accept(Component.literal("[Larper🥀] Lyrics: ")
                 .withStyle(ChatFormatting.GOLD)
-                .append(Component.literal(lyrics.isEnabled() ? "enabled (LRCLib)" : "disabled (/craftify lyrics on)")
+                .append(Component.literal(lyrics.isEnabled() ? "enabled (LRCLib)" : "disabled (/larper lyrics on)")
                         .withStyle(lyrics.isEnabled() ? ChatFormatting.GREEN : ChatFormatting.GRAY)));
         feedback.accept(Component.literal("[Larper🥀] Lyrics share: ")
                 .withStyle(ChatFormatting.GOLD)
                 .append(Component.literal(lyrics.isShared()
                                 ? "shared with others (hologram)"
-                                : "only you (F10 or /craftify lyrics)")
+                                : "only you (F10 or /larper lyrics)")
                         .withStyle(lyrics.isShared() ? ChatFormatting.GREEN : ChatFormatting.GRAY)));
         feedback.accept(Component.literal("[Larper🥀] Lyrics position: ")
                 .withStyle(ChatFormatting.GOLD)
@@ -175,7 +175,7 @@ public final class SpotifyCommand {
     }
 
     /**
-     * {@code /craftify lyrics search [query]} — searches LRCLib and lists the candidates
+     * {@code /larper lyrics search [query]} — searches LRCLib and lists the candidates
      * so a miss can be debugged (what the API returns vs what the auto-match expected).
      * Without arguments it uses the currently detected song.
      */
@@ -186,7 +186,7 @@ public final class SpotifyCommand {
             String track = LyricsManager.instance().currentTrack();
             if (track == null) {
                 source.sendError(Component.literal("[Larper🥀] No song detected and no query given. "
-                        + "Usage: /craftify lyrics search <song artist>").withStyle(ChatFormatting.RED));
+                        + "Usage: /larper lyrics search <song artist>").withStyle(ChatFormatting.RED));
                 return 0;
             }
             finalQuery = track.replace(" - ", " ");
@@ -257,7 +257,7 @@ public final class SpotifyCommand {
                 .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.YELLOW));
         if (enabled) {
             context.getSource().sendFeedback(Component.literal("Each timed lyric line will be sent to normal server chat. "
-                    + "Use /craftify lyrics chat off to stop.").withStyle(ChatFormatting.GRAY));
+                    + "Use /larper lyrics chat off to stop.").withStyle(ChatFormatting.GRAY));
         }
         return 1;
     }
@@ -355,7 +355,7 @@ public final class SpotifyCommand {
                 .withStyle(ChatFormatting.GOLD)
                 .append(SpotifyTracker.isRunning()
                         ? (SpotifyTracker.isPaused()
-                                ? Component.literal("paused (use /craftify send on)").withStyle(ChatFormatting.YELLOW)
+                                ? Component.literal("paused (use /larper send on)").withStyle(ChatFormatting.YELLOW)
                                 : Component.literal("active (real-time song change detection)").withStyle(ChatFormatting.GREEN))
                         : Component.literal("inactive (only sends while in a world)").withStyle(ChatFormatting.GRAY)));
     }

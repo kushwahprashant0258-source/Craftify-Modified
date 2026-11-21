@@ -14,7 +14,7 @@ import org.foranly.craftify.client.command.SpotifyCommand;
 import org.foranly.craftify.client.spotify.SpotifyTracker;
 
 /**
- * General Craftify menu (F10 or {@code /craftify menu}): the entry point of the mod's UI.
+ * General Larper menu (F10 or {@code /larper menu}): the entry point of the mod's UI.
  * Shows general options (checking Spotify, packet sending) and links to the submenus for
  * the specific features (lyrics options, lyrics search).
  */

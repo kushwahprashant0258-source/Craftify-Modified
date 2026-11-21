@@ -112,7 +112,7 @@ public final class CraftifyServer {
         LOGGER.info("  Title hologram: {}", titleHolograms.isEnabled() ? "ENABLED" : "disabled");
         LOGGER.info("  Lyrics display: {}, number: {}", config.lyricsDisplay.mode,
                 config.lyricsDisplay.number);
-        LOGGER.info("  Commands: /nowplaying, /craftifyserver reload|status");
+        LOGGER.info("  Commands: /nowplaying, /larperserver reload|status");
         LOGGER.info("  Config: config/craftify-server.json");
         LOGGER.info("==================================================");
     }
@@ -225,7 +225,7 @@ public final class CraftifyServer {
             return Command.SINGLE_SUCCESS;
         }));
 
-        dispatcher.register(Commands.literal("craftifyserver")
+        dispatcher.register(Commands.literal("larperserver")
                 .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_MODERATOR))
                 .then(Commands.literal("status").executes(ctx -> {
                     ctx.getSource().sendSuccess(() -> Component.literal(

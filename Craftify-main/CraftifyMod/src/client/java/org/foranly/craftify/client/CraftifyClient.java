@@ -31,7 +31,7 @@ public class CraftifyClient implements ClientModInitializer {
     public void onInitializeClient() {
         // The payloads are registered in the common entrypoint (Craftify#onInitialize),
         // so the same registration also serves a dedicated server running this mod.
-        // Registers the lyrics HUD element (LRCLib overlay, toggle: F10 / /craftify lyrics).
+        // Registers the lyrics HUD element (LRCLib overlay, toggle: F10 / /larper lyrics).
         LyricsManager.instance();
         // F10 opens the general Craftify menu (in-game only).
         KeyBindingHelper.registerKeyBinding(LYRICS_KEY);
