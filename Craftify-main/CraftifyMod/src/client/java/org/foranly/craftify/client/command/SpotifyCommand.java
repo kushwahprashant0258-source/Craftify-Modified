@@ -61,7 +61,7 @@ public final class SpotifyCommand {
                                 .then(ClientCommandManager.literal("status")
                                         .executes(ctx -> {
                                             boolean enabled = LyricsManager.instance().isChatEnabled();
-                                            ctx.getSource().sendFeedback(Component.literal("[Craftify] Automatic chat lyrics: "
+                                            ctx.getSource().sendFeedback(Component.literal("[Larper🥀] Automatic chat lyrics: "
                                                     + (enabled ? "ON" : "OFF"))
                                                     .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY));
                                             return 1;
@@ -89,11 +89,11 @@ public final class SpotifyCommand {
         try {
             LyricsPosition position = LyricsPosition.fromId(id);
             LyricsManager.instance().setPosition(position);
-            source.sendFeedback(Component.literal("[Craftify] Lyrics overlay position: ")
+            source.sendFeedback(Component.literal("[Larper🥀] Lyrics overlay position: ")
                     .withStyle(ChatFormatting.GOLD)
                     .append(Component.literal(position.displayName()).withStyle(ChatFormatting.WHITE)));
         } catch (IllegalArgumentException e) {
-            source.sendError(Component.literal("[Craftify] Unknown position \"" + id + "\". "
+            source.sendError(Component.literal("[Larper🥀] Unknown position \"" + id + "\". "
                     + "Valid: topleft, topcenter, topright, middleleft, middlecenter, "
                     + "middleright, bottomleft, bottomcenter, bottomright")
                     .withStyle(ChatFormatting.RED));
@@ -105,14 +105,14 @@ public final class SpotifyCommand {
         SpotifyTracker.setPaused(paused);
         FabricClientCommandSource source = context.getSource();
         if (paused) {
-            source.sendFeedback(Component.literal("[Craftify] Packet sending paused.")
+            source.sendFeedback(Component.literal("[Larper🥀] Packet sending paused.")
                     .withStyle(ChatFormatting.YELLOW));
-            source.sendFeedback(Component.literal("[Craftify] Use /craftify send on to resume.")
+            source.sendFeedback(Component.literal("[Larper🥀] Use /craftify send on to resume.")
                     .withStyle(ChatFormatting.GRAY));
         } else {
-            source.sendFeedback(Component.literal("[Craftify] Packet sending resumed.")
+            source.sendFeedback(Component.literal("[Larper🥀] Packet sending resumed.")
                     .withStyle(ChatFormatting.GREEN));
-            source.sendFeedback(Component.literal("[Craftify] The current Spotify state will be sent on the next read.")
+            source.sendFeedback(Component.literal("[Larper🥀] The current Spotify state will be sent on the next read.")
                     .withStyle(ChatFormatting.GRAY));
         }
         return 1;
@@ -121,17 +121,17 @@ public final class SpotifyCommand {
     /** Shows the lyrics overlay state (enabled, share, position, track, fetch result). */
     private static void sendLyricsStatus(Consumer<Component> feedback) {
         LyricsManager lyrics = LyricsManager.instance();
-        feedback.accept(Component.literal("[Craftify] Lyrics: ")
+        feedback.accept(Component.literal("[Larper🥀] Lyrics: ")
                 .withStyle(ChatFormatting.GOLD)
                 .append(Component.literal(lyrics.isEnabled() ? "enabled (LRCLib)" : "disabled (/craftify lyrics on)")
                         .withStyle(lyrics.isEnabled() ? ChatFormatting.GREEN : ChatFormatting.GRAY)));
-        feedback.accept(Component.literal("[Craftify] Lyrics share: ")
+        feedback.accept(Component.literal("[Larper🥀] Lyrics share: ")
                 .withStyle(ChatFormatting.GOLD)
                 .append(Component.literal(lyrics.isShared()
                                 ? "shared with others (hologram)"
                                 : "only you (F10 or /craftify lyrics)")
                         .withStyle(lyrics.isShared() ? ChatFormatting.GREEN : ChatFormatting.GRAY)));
-        feedback.accept(Component.literal("[Craftify] Lyrics position: ")
+        feedback.accept(Component.literal("[Larper🥀] Lyrics position: ")
                 .withStyle(ChatFormatting.GOLD)
                 .append(Component.literal(lyrics.position().displayName())
                         .withStyle(ChatFormatting.WHITE)));
@@ -139,12 +139,12 @@ public final class SpotifyCommand {
         String track = lyrics.currentTrack();
         String status = lyrics.fetchStatus();
         if (track == null) {
-            feedback.accept(Component.literal("[Craftify] Lyrics track: ")
+            feedback.accept(Component.literal("[Larper🥀] Lyrics track: ")
                     .withStyle(ChatFormatting.GOLD)
                     .append(Component.literal("waiting for a playing song").withStyle(ChatFormatting.GRAY)));
             return;
         }
-        feedback.accept(Component.literal("[Craftify] Lyrics track: ")
+        feedback.accept(Component.literal("[Larper🥀] Lyrics track: ")
                 .withStyle(ChatFormatting.GOLD)
                 .append(Component.literal(track).withStyle(ChatFormatting.WHITE)));
 
@@ -155,19 +155,19 @@ public final class SpotifyCommand {
             case "not_found" -> "no synced lyrics found (LRCLib)";
             default -> "no lyrics loaded";
         };
-        feedback.accept(Component.literal("[Craftify] Lyrics state: ")
+        feedback.accept(Component.literal("[Larper🥀] Lyrics state: ")
                 .withStyle(ChatFormatting.GOLD)
                 .append(Component.literal(fetchText)
                         .withStyle("loaded".equals(status) ? ChatFormatting.GREEN : ChatFormatting.YELLOW)));
 
         if (!lyrics.lastDetail().isEmpty()) {
-            feedback.accept(Component.literal("[Craftify] Lyrics detail: ")
+            feedback.accept(Component.literal("[Larper🥀] Lyrics detail: ")
                     .withStyle(ChatFormatting.GOLD)
                     .append(Component.literal(lyrics.lastDetail()).withStyle(ChatFormatting.GRAY)));
         }
 
         // If the overlay never renders, the problem is on the HUD side, not the data.
-        feedback.accept(Component.literal("[Craftify] Lyrics overlay: ")
+        feedback.accept(Component.literal("[Larper🥀] Lyrics overlay: ")
                 .withStyle(ChatFormatting.GOLD)
                 .append(lyrics.renderCount() > 0
                         ? Component.literal("rendering (" + lyrics.renderCount() + " frames)").withStyle(ChatFormatting.GREEN)
@@ -185,7 +185,7 @@ public final class SpotifyCommand {
         if (finalQuery == null || finalQuery.isBlank()) {
             String track = LyricsManager.instance().currentTrack();
             if (track == null) {
-                source.sendError(Component.literal("[Craftify] No song detected and no query given. "
+                source.sendError(Component.literal("[Larper🥀] No song detected and no query given. "
                         + "Usage: /craftify lyrics search <song artist>").withStyle(ChatFormatting.RED));
                 return 0;
             }
@@ -193,7 +193,7 @@ public final class SpotifyCommand {
         }
 
         String usedQuery = finalQuery;
-        source.sendFeedback(Component.literal("[Craftify] Searching LRCLib for: ")
+        source.sendFeedback(Component.literal("[Larper🥀] Searching LRCLib for: ")
                 .withStyle(ChatFormatting.GOLD)
                 .append(Component.literal(usedQuery).withStyle(ChatFormatting.WHITE)));
 
@@ -205,21 +205,21 @@ public final class SpotifyCommand {
     private static void showSearchResults(FabricClientCommandSource source, String query,
                                           SearchOutcome outcome, Throwable error) {
         if (error != null) {
-            source.sendError(Component.literal("[Craftify] Search failed: " + error.getMessage())
+            source.sendError(Component.literal("[Larper🥀] Search failed: " + error.getMessage())
                     .withStyle(ChatFormatting.RED));
             return;
         }
         if (outcome.error() != null) {
-            source.sendError(Component.literal("[Craftify] Search error: " + outcome.error())
+            source.sendError(Component.literal("[Larper🥀] Search error: " + outcome.error())
                     .withStyle(ChatFormatting.RED));
             return;
         }
         List<SearchCandidate> candidates = outcome.candidates();
         if (candidates.isEmpty()) {
-            source.sendError(Component.literal("[Craftify] No results for: " + query).withStyle(ChatFormatting.RED));
+            source.sendError(Component.literal("[Larper🥀] No results for: " + query).withStyle(ChatFormatting.RED));
             return;
         }
-        source.sendFeedback(Component.literal("[Craftify] " + candidates.size() + " result(s):")
+        source.sendFeedback(Component.literal("[Larper🥀] " + candidates.size() + " result(s):")
                 .withStyle(ChatFormatting.GOLD));
         int shown = Math.min(candidates.size(), 8);
         for (int i = 0; i < shown; i++) {
@@ -231,12 +231,12 @@ public final class SpotifyCommand {
                             : candidate.hasPlainLyrics()
                                     ? "[plain only]"
                                     : "[]";
-            source.sendFeedback(Component.literal("[Craftify]   " + (i + 1) + ". "
+            source.sendFeedback(Component.literal("[Larper🥀]   " + (i + 1) + ". "
                     + candidate.trackName() + " - " + candidate.artistName() + " " + tags)
                     .withStyle(candidate.hasSyncedLyrics() ? ChatFormatting.GREEN : ChatFormatting.GRAY));
         }
         if (candidates.size() > shown) {
-            source.sendFeedback(Component.literal("[Craftify]   ... and " + (candidates.size() - shown) + " more")
+            source.sendFeedback(Component.literal("[Larper🥀]   ... and " + (candidates.size() - shown) + " more")
                     .withStyle(ChatFormatting.GRAY));
         }
     }
@@ -252,7 +252,7 @@ public final class SpotifyCommand {
 
     private static int setLyricsChat(CommandContext<FabricClientCommandSource> context, boolean enabled) {
         LyricsManager.instance().setChatEnabled(enabled);
-        context.getSource().sendFeedback(Component.literal("[Craftify] Automatic chat lyrics "
+        context.getSource().sendFeedback(Component.literal("[Larper🥀] Automatic chat lyrics "
                 + (enabled ? "enabled" : "disabled") + ".")
                 .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.YELLOW));
         if (enabled) {
@@ -264,7 +264,7 @@ public final class SpotifyCommand {
 
     private static int setShared(CommandContext<FabricClientCommandSource> context, boolean shared) {
         LyricsManager.instance().setShared(shared);
-        context.getSource().sendFeedback(Component.literal("[Craftify] Sharing lyrics with others "
+        context.getSource().sendFeedback(Component.literal("[Larper🥀] Sharing lyrics with others "
                 + (shared ? "enabled (server hologram)." : "disabled (only you)."))
                 .withStyle(shared ? ChatFormatting.GREEN : ChatFormatting.YELLOW));
         return 1;
@@ -273,7 +273,7 @@ public final class SpotifyCommand {
     private static int setLyrics(CommandContext<FabricClientCommandSource> context, boolean enabled) {
         LyricsManager.instance().setEnabled(enabled);
         FabricClientCommandSource source = context.getSource();
-        source.sendFeedback(Component.literal("[Craftify] Lyrics overlay "
+        source.sendFeedback(Component.literal("[Larper🥀] Lyrics overlay "
                 + (enabled ? "enabled (LRCLib)." : "disabled."))
                 .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.YELLOW));
         return 1;
@@ -293,18 +293,18 @@ public final class SpotifyCommand {
     public static void printSpotifyStatus(Consumer<Component> feedback, Consumer<Component> error) {
         SpotifyProcess.Os os = SpotifyProcess.currentOs();
 
-        feedback.accept(Component.literal("[Craftify] Operating system: ")
+        feedback.accept(Component.literal("[Larper🥀] Operating system: ")
                 .withStyle(ChatFormatting.GOLD)
                 .append(Component.literal(os.name()).withStyle(ChatFormatting.YELLOW)));
 
         if (os == SpotifyProcess.Os.UNSUPPORTED) {
-            error.accept(Component.literal("[Craftify] This operating system is not supported.")
+            error.accept(Component.literal("[Larper🥀] This operating system is not supported.")
                     .withStyle(ChatFormatting.RED));
             return;
         }
 
         SpotifyProcess.Snapshot snapshot = SpotifyProcess.readSnapshot(os);
-        feedback.accept(Component.literal("[Craftify] Spotify process (" + os.executable() + "): ")
+        feedback.accept(Component.literal("[Larper🥀] Spotify process (" + os.executable() + "): ")
                 .withStyle(ChatFormatting.GOLD)
                 .append(snapshot.running()
                         ? Component.literal("running").withStyle(ChatFormatting.GREEN)
@@ -312,35 +312,35 @@ public final class SpotifyCommand {
 
         switch (snapshot.status()) {
             case PLAYING -> {
-                feedback.accept(Component.literal("[Craftify] State: ")
+                feedback.accept(Component.literal("[Larper🥀] State: ")
                         .withStyle(ChatFormatting.GOLD)
                         .append(Component.literal("playing").withStyle(ChatFormatting.GREEN)));
-                feedback.accept(Component.literal("[Craftify] Current title: ")
+                feedback.accept(Component.literal("[Larper🥀] Current title: ")
                         .withStyle(ChatFormatting.GOLD)
                         .append(Component.literal(snapshot.title()).withStyle(ChatFormatting.WHITE)));
             }
-            case PAUSED -> feedback.accept(Component.literal("[Craftify] State: ")
+            case PAUSED -> feedback.accept(Component.literal("[Larper🥀] State: ")
                     .withStyle(ChatFormatting.GOLD)
                     .append(Component.literal("paused").withStyle(ChatFormatting.YELLOW)));
             case UNKNOWN -> {
-                feedback.accept(Component.literal("[Craftify] State: ")
+                feedback.accept(Component.literal("[Larper🥀] State: ")
                         .withStyle(ChatFormatting.GOLD)
                         .append(Component.literal("no active song (no_track)").withStyle(ChatFormatting.YELLOW)));
                 sendNoTrackHint(feedback, os);
             }
-            default -> feedback.accept(Component.literal("[Craftify] State: ")
+            default -> feedback.accept(Component.literal("[Larper🥀] State: ")
                     .withStyle(ChatFormatting.GOLD)
                     .append(Component.literal("Spotify closed (closed)").withStyle(ChatFormatting.RED)));
         }
 
         if (os == SpotifyProcess.Os.MACOS) {
-            feedback.accept(Component.literal("[Craftify] macOS diagnostics:")
+            feedback.accept(Component.literal("[Larper🥀] macOS diagnostics:")
                     .withStyle(ChatFormatting.GOLD));
-            feedback.accept(Component.literal("[Craftify]  - MediaRemote (nowplaying-cli): ")
+            feedback.accept(Component.literal("[Larper🥀]  - MediaRemote (nowplaying-cli): ")
                     .withStyle(ChatFormatting.GOLD)
                     .append(Component.literal(SpotifyProcess.macosNowPlayingDiagnostic())
                             .withStyle(ChatFormatting.GRAY)));
-            feedback.accept(Component.literal("[Craftify]  - AppleScript (fallback): ")
+            feedback.accept(Component.literal("[Larper🥀]  - AppleScript (fallback): ")
                     .withStyle(ChatFormatting.GOLD)
                     .append(SpotifyProcess.macosAppleScriptBlocked()
                             ? Component.literal("blocked (Automation permission pending or denied)")
@@ -351,7 +351,7 @@ public final class SpotifyCommand {
 
         sendLyricsStatus(feedback);
 
-        feedback.accept(Component.literal("[Craftify] Packet sending: ")
+        feedback.accept(Component.literal("[Larper🥀] Packet sending: ")
                 .withStyle(ChatFormatting.GOLD)
                 .append(SpotifyTracker.isRunning()
                         ? (SpotifyTracker.isPaused()
@@ -364,14 +364,14 @@ public final class SpotifyCommand {
     private static void sendNoTrackHint(Consumer<Component> feedback, SpotifyProcess.Os os) {
         Component hint = switch (os) {
             case MACOS -> SpotifyProcess.macosAppleScriptBlocked()
-                    ? Component.literal("[Craftify] To read the track: accept the \"control Spotify\" prompt when it "
+                    ? Component.literal("[Larper🥀] To read the track: accept the \"control Spotify\" prompt when it "
                             + "appears (once). If it does not appear, enable it manually at System Settings "
                             + "> Privacy & Security > Automation (Minecraft/Java -> Spotify).")
                             .withStyle(ChatFormatting.GRAY)
-                    : Component.literal("[Craftify] To read the track: accept the \"control Spotify\" "
+                    : Component.literal("[Larper🥀] To read the track: accept the \"control Spotify\" "
                             + "prompt when it appears (once).")
                             .withStyle(ChatFormatting.GRAY);
-            case LINUX -> Component.literal("[Craftify] No title: the mod bundles playerctl; as a backup "
+            case LINUX -> Component.literal("[Larper🥀] No title: the mod bundles playerctl; as a backup "
                     + "install xdotool (e.g. sudo apt install xdotool) or the system playerctl.")
                     .withStyle(ChatFormatting.GRAY);
             default -> null;

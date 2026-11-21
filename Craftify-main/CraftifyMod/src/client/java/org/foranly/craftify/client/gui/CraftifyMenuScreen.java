@@ -23,7 +23,7 @@ public final class CraftifyMenuScreen extends Screen {
     private Button sendingButton;
 
     public CraftifyMenuScreen() {
-        super(Component.literal("Craftify"));
+        super(Component.literal("Larper🥀"));
     }
 
     @Override

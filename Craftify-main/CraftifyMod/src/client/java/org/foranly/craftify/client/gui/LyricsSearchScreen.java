@@ -31,7 +31,7 @@ public final class LyricsSearchScreen extends Screen {
     private boolean searching;
 
     public LyricsSearchScreen() {
-        super(Component.literal("Craftify - Lyrics search"));
+        super(Component.literal("Larper🥀 - Lyrics search"));
     }
 
     @Override
@@ -165,7 +165,7 @@ public final class LyricsSearchScreen extends Screen {
                         ? "[synced " + formatDuration(candidate.durationSeconds()) + "]"
                         : candidate.hasPlainLyrics() ? "[plain only]" : "[]";
         Minecraft.getInstance().player.displayClientMessage(
-                Component.literal("[Craftify] " + candidate.trackName() + " - " + candidate.artistName() + " " + tags)
+                Component.literal("[Larper🥀] " + candidate.trackName() + " - " + candidate.artistName() + " " + tags)
                         .withStyle(candidate.hasSyncedLyrics() ? ChatFormatting.GREEN : ChatFormatting.GRAY), false);
     }
 

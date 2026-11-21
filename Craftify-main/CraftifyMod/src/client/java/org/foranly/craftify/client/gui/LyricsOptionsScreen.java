@@ -23,7 +23,7 @@ public final class LyricsOptionsScreen extends Screen {
     private final List<Button> positionButtons = new ArrayList<>();
 
     public LyricsOptionsScreen() {
-        super(Component.literal("Craftify - Lyrics"));
+        super(Component.literal("Larper🥀 - Lyrics"));
     }
 
     @Override

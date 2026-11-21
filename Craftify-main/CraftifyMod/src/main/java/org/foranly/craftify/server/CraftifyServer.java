@@ -229,7 +229,7 @@ public final class CraftifyServer {
                 .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_MODERATOR))
                 .then(Commands.literal("status").executes(ctx -> {
                     ctx.getSource().sendSuccess(() -> Component.literal(
-                            "Craftify server: nametag=" + (nametags.isEnabled() ? "on" : "off")
+                            "Larper🥀 server: nametag=" + (nametags.isEnabled() ? "on" : "off")
                                     + ", hologram=" + (titleHolograms.isEnabled() ? "on" : "off")
                                     + ", lyrics-display=" + config.lyricsDisplay.mode
                                     + ", players with known state: " + store.size()), false);
@@ -238,7 +238,7 @@ public final class CraftifyServer {
                 .then(Commands.literal("reload").executes(ctx -> {
                     reload();
                     ctx.getSource().sendSuccess(() -> Component.literal(
-                            "Craftify server reloaded (craftify-server.json)."), true);
+                            "Larper🥀 server reloaded (craftify-server.json)."), true);
                     return Command.SINGLE_SUCCESS;
                 })));
     }
@@ -246,7 +246,7 @@ public final class CraftifyServer {
     /** One line describing a state, mirroring the Paper plugin's /nowplaying colors. */
     private static Component describe(PlayerSpotifyState state) {
         if (state == null) {
-            return Component.literal("No Spotify data yet. Do you have the Craftify mod installed?")
+            return Component.literal("No Spotify data yet. Do you have the Larper🥀 mod installed?")
                     .withStyle(ChatFormatting.GRAY);
         }
         return switch (state.state()) {

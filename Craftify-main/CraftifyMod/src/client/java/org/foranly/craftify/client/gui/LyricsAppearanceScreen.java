@@ -33,7 +33,7 @@ public final class LyricsAppearanceScreen extends Screen {
     private EditBox colorBox;
 
     public LyricsAppearanceScreen(Screen parent) {
-        super(Component.literal("Craftify - Lyrics Appearance"));
+        super(Component.literal("Larper🥀 - Lyrics Appearance"));
         this.parent = parent;
     }
 
