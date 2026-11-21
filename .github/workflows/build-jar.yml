@@ -13,8 +13,11 @@ jobs:
           distribution: temurin
           java-version: '21'
       - run: chmod +x gradlew
-      - run: ./gradlew build
+      - run: ./gradlew --no-daemon clean build
       - uses: actions/upload-artifact@v4
         with:
           name: craftify-mod-jar
-          path: Craftify-main/CraftifyMod/build/libs/*.jar
+          path: |
+            Craftify-main/CraftifyMod/build/libs/*.jar
+            !Craftify-main/CraftifyMod/build/libs/*-sources.jar
+          if-no-files-found: error
