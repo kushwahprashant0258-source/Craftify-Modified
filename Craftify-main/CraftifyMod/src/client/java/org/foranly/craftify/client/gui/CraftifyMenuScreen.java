@@ -110,7 +110,7 @@ public final class CraftifyMenuScreen extends Screen {
             Minecraft.getInstance().execute(() -> {
                 if (Minecraft.getInstance().player != null) {
                     for (Component message : messages) {
-                        Minecraft.getInstance().player.sendSystemMessage(message);
+                        Minecraft.getInstance().player.displayClientMessage(message, false);
                     }
                 }
             });

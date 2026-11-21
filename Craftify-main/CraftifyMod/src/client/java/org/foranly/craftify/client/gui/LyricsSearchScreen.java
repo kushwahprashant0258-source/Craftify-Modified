@@ -164,9 +164,9 @@ public final class LyricsSearchScreen extends Screen {
                 : candidate.hasSyncedLyrics()
                         ? "[synced " + formatDuration(candidate.durationSeconds()) + "]"
                         : candidate.hasPlainLyrics() ? "[plain only]" : "[]";
-        Minecraft.getInstance().player.sendSystemMessage(
+        Minecraft.getInstance().player.displayClientMessage(
                 Component.literal("[Craftify] " + candidate.trackName() + " - " + candidate.artistName() + " " + tags)
-                        .withStyle(candidate.hasSyncedLyrics() ? ChatFormatting.GREEN : ChatFormatting.GRAY));
+                        .withStyle(candidate.hasSyncedLyrics() ? ChatFormatting.GREEN : ChatFormatting.GRAY), false);
     }
 
     private static String candidateLabel(SearchCandidate candidate) {

@@ -263,11 +263,11 @@ public final class SpotifyTracker {
     private static void notifyMacosPermission() {
         Minecraft.getInstance().execute(() -> {
             if (Minecraft.getInstance().player != null) {
-                Minecraft.getInstance().player.sendSystemMessage(Component.literal(
+                Minecraft.getInstance().player.displayClientMessage(Component.literal(
                         "[Craftify] macOS needs your permission to read Spotify: accept the \"control Spotify\" "
                                 + "prompt when it appears (once), or enable it manually at "
                                 + "System Settings > Privacy & Security > Automation.")
-                        .withStyle(ChatFormatting.GRAY));
+                        .withStyle(ChatFormatting.GRAY), false);
             }
         });
     }
