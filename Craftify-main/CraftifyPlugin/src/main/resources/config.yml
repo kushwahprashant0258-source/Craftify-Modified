@@ -1,0 +1,58 @@
+# How to show the player's song on the server.
+
+# --- Nametag mode (recommended) -------------------------------------------------
+# Shows the song next to the player's floating name using scoreboard teams
+# (prefix + name + suffix). It is part of the player's entity, so it follows them
+# without lag. Note: vanilla renders player name tags on a single line and ignores
+# the custom name for players, so the song is appended as a team suffix.
+# The owner of the name sees it in third person (F5) if the client mod includes the
+# "see your own name" mixin (by default Minecraft does not show it).
+nametag:
+  # Enables/disables the nametag.
+  enabled: true
+  # Text shown BEFORE the player name (Adventure MiniMessage). Placeholders:
+  #   {name}  → player name
+  #   {track} → "Song - Artist"
+  prefix: ""
+  # Text shown AFTER the player name (Adventure MiniMessage).
+  suffix: " <green>♪ </green><white>{track}</white>"
+
+# --- Hologram mode (optional) ---------------------------------------------------
+# A TextDisplay entity that follows the player. It works, but being a separate entity
+# that teleports every tick, a small delay can be noticed when moving.
+hologram:
+  # Enables/disables the hologram.
+  enabled: false
+  # Music icon glyph (Minecraft's default font). If it doesn't render well,
+  # try "♫ " (U+266B) or another.
+  icon: "♪ "
+  # Height above the player, in blocks.
+  height: 2.15
+  # Text size (TextDisplay entity scale).
+  scale: 0.6
+
+# --- Lyrics display ---------------------------------------------------------------
+# Shows the current lyric line the player chooses to share (the mod sends
+# craftify:lyricsline only while the player has "share lyrics" enabled in the mod's F10
+# menu; an empty line clears it and a pause keeps the last line frozen).
+lyrics-display:
+  # How the shared line is rendered:
+  #   below-name → vanilla scoreboard BELOW_NAME slot: the line is the objective's
+  #                display name and a number appears after it (vanilla requires one,
+  #                see `number` below). Part of the player's name tag, zero lag.
+  #   hologram   → legacy TextDisplay entity above the player (may lag while moving).
+  mode: below-name
+  # Numeric value required by the BELOW_NAME slot:
+  #   line    → the actual lyric line number the mod sends (1, 2, 3...) — recommended
+  #   random  → a random number per player
+  #   0 or 1  → a fixed number
+  number: line
+
+# --- Lyrics hologram (legacy mode, used when lyrics-display.mode: hologram) ---------
+lyrics-hologram:
+  # Enables/disables the lyrics hologram.
+  enabled: true
+  # Height above the player, in blocks.
+  height: 1.85
+  # Text size (TextDisplay entity scale).
+  scale: 0.6

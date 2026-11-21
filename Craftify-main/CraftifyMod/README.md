@@ -1,0 +1,459 @@
+# CraftifyMod
+
+Minecraft mod (Fabric, **dual-sided**) that connects Spotify with the game:
+
+- **On the client** it detects the **song title currently playing on Spotify** by reading
+  the window title / media state of the Spotify process running on the player's operating
+  system, sends it to the server over the `craftify:title` channel, and shows synchronized
+  lyrics (LRCLib) on screen.
+- **On the server** (a dedicated Fabric server with mods, or an integrated/LAN world) it
+  receives those packets and renders them like the Paper plugin does: nametag, shared
+  lyrics and optional holograms — see [Server side](#server-side-fabric-servers).
+
+The title is sent to the server over the `craftify:title` channel, where a receiver
+([**CraftifyPlugin**](../CraftifyPlugin/README.md) on Paper, or this same mod on a Fabric
+server) displays it. The communication contract is in [`../PROTOCOL.md`](../PROTOCOL.md).
+
+> **Note:** without any receiver the client side does nothing visible beyond its local
+> overlay, but it includes the `/craftify spotify` command to verify detection in
+> singleplayer.
+
+## Spotify detection
+
+The mod detects the Spotify process running on the player's OS and reads its **playback
+state** (playing / paused / closed) and the **current song**. On Windows the title keeps
+being read even when Spotify is **minimized or in the tray** (the hidden window keeps its
+text; only auxiliary IME/GDI+ windows are skipped).
+
+### Pause detection
+
+The mod also detects when Spotify is **paused** (no active song), per OS:
+
+- **Windows:** the window title reverts to the account tier (`"Spotify Free"`/`"Spotify
+  Premium"`) while paused — "Spotify running without a song title" means paused, with no
+  extra cost.
+- **macOS:** `playbackRate` of the now-playing info via the bundled `nowplaying-cli`
+  (0 = paused), falling back to Spotify's `player state` via AppleScript when the binary
+  is unavailable.
+- **Linux:** MPRIS `PlaybackStatus` via `playerctl` (same single invocation as the
+  metadata). The `xdotool` fallback cannot detect pause (a readable title means playing).
+
+### Supported executables (one per OS)
+
+| OS      | Executable    | Process detection        | Title reading |
+|---------|---------------|------------------------------|--------------------|
+| Windows | `Spotify.exe` | JNA/Win32 (Toolhelp32) with `tasklist` fallback | JNA/Win32 (`EnumWindows` + `GetWindowText`) with PowerShell fallback |
+| macOS   | `Spotify`     | JNA/CoreGraphics (window owner) with `pgrep` fallback | MediaRemote via bundled `nowplaying-cli` (no permission) with AppleScript (Automation) fallback — the native window title is the account tier, not the song, so it is skipped |
+| Linux   | `spotify`     | MPRIS/`playerctl` (implies running); `pgrep -x spotify` fallback | MPRIS/`playerctl` (metadata) with `xdotool` fallback (window) |
+
+### Requirements per OS
+
+- **Windows**: uses a native probe (JNA/Win32) without extra permissions; PowerShell is
+  only used as a fallback if JNA is unavailable.
+- **macOS**: detecting the process needs no permissions. For the **track and the
+  pause/play state**, the window title is **not** used: on macOS the Spotify window bar
+  shows the **account tier** ("Spotify Free"/"Spotify Premium", regardless of the song),
+  never the song title. On **Apple Silicon (arm64)** the mod bundles
+  [`nowplaying-cli`](https://github.com/kirtan-shah/nowplaying-cli) and reads the track
+  via the private **MediaRemote** framework — **no permission of any kind is needed**
+  (no Automation, no Screen Recording); it works even with the window hidden. The v2.1.0
+  build also ships (and extracts) the two companion helper files it needs on macOS 15.4+
+  (`mediaremote-mini.pl` + `MediaRemoteMini.dylib`). On
+  **Intel Macs** (no arm64 binary) it falls back to **Spotify's own AppleScript
+  dictionary** (`player state` + `current track`), which needs the one-time
+  **"control Spotify"** (Automation) prompt — accept it when it appears when you join
+  the game, one click, no need to open System Settings. If MediaRemote ever returns
+  nothing (e.g. nothing playing), the same AppleScript fallback applies. While the
+  Automation permission is pending or denied, the mod **backs off** the AppleScript
+  query (retries every 5 s instead of every poll, so the system dialog is not re-triggered
+  or blocked repeatedly), tells you **once in chat** what to do, and the hint of
+  `/craftify spotify` includes the manual path
+  (`System Settings > Privacy & Security > Automation`). Note: accepting the prompt
+  from **Terminal** (or granting the permission to Terminal) does **not** help the mod —
+  the Automation permission is per-app, and in-game the event comes from the
+  Minecraft/Java process, which may have no bundle identifier (in that case no prompt
+  appears at all and the permission cannot be granted from System Settings). (Screen
+  Recording / Accessibility do **not** help here: the window title never contains the
+  song.)
+- **Linux**: uses **MPRIS** via `playerctl` as the main probe: a single invocation gives
+  process + title, works with the window minimized, **no permissions** and no X11/Wayland
+  dependency. **You don't need to install anything with sudo**: the mod bundles the
+  official playerctl binary (MIT) **and its companion library `libplayerctl.so.2`** inside
+  the JAR and extracts both to the user's temp directory on first use (the binary is
+  dynamically linked against that library, which most distros do not ship, so the mod
+  exposes it through `LD_LIBRARY_PATH`; the remaining glib libraries come from the
+  system). If the bundled copy cannot run or reports no Spotify player, it falls back to
+  the system-installed `playerctl`, and then to `pgrep` + `xdotool` (e.g. `sudo apt
+  install xdotool`; note `xdotool` needs X11, so on Wayland the `playerctl`/MPRIS path is
+  the one that works). Spotify's local API (port 4380) no longer exists on modern clients.
+  Spotify must run in the same graphical session as the user.
+
+## Server side (Fabric servers)
+
+Servers that run **mods instead of plugins** cannot load CraftifyPlugin — so the mod
+itself implements the receiving side. Drop the same jar in the **server's `mods` folder**
+(with Fabric API) and every client — vanilla or modded — gets the rendering; only reading
+Spotify needs the client mod. In singleplayer/LAN worlds it works automatically too: the
+integrated server runs the same code.
+
+What it renders (mirroring CraftifyPlugin):
+
+| Mode | Default | How |
+|------|---------|-----|
+| **Nametag** | on | Scoreboard teams (`prefix + name + suffix`): the song next to the floating name, zero lag. The owner sees their own tag in third person (F5) with the client mixin. |
+| **Shared lyrics** | on | The line shared over `craftify:lyricsline` in the vanilla `BELOW_NAME` slot — each player's own line under their own name (custom per-player score format, so several players can share at once), or a legacy `TextDisplay` hologram (`lyrics-display.mode: hologram`). |
+| **Title hologram** | off | A non-persistent `TextDisplay` entity following the player (icon + title). |
+
+Commands:
+
+- `/nowplaying` — shows your own Spotify state.
+- `/craftifyserver status` — config summary + how many players have a known state
+  (permission: server operators).
+- `/craftifyserver reload` — reloads the config and re-applies the stored states.
+
+### Configuration (`config/craftify-server.json`)
+
+Created automatically on first server start. The nametag texts use **legacy formatting
+codes** (`§a` green, `§f` white, ...) instead of MiniMessage — vanilla renders them above
+heads and there is no MiniMessage outside Paper. Placeholders `{name}` and `{track}` work
+the same as in the plugin.
+
+```json
+{
+  "nametag": {
+    "enabled": true,
+    "prefix": "",
+    "suffix": " §a♪ §f{track}"
+  },
+  "hologram": {
+    "enabled": false,
+    "icon": "♪ ",
+    "height": 2.15,
+    "scale": 0.6
+  },
+  "lyricsDisplay": {
+    "mode": "below-name",
+    "number": "line"
+  },
+  "lyricsHologram": {
+    "enabled": true,
+    "height": 1.85,
+    "scale": 0.6
+  }
+}
+```
+
+Implementation notes:
+
+- Receivers are registered for both channels (`ServerPlayNetworking`, typed payloads) and
+  run on the server thread; stale packets are discarded by `timestamp` (PROTOCOL.md §4.2).
+- Disconnecting clears the player's state, team, score and holograms; everything is also
+  unregistered before the world save on stop, so nothing lingers in the scoreboard data.
+- The holograms use an access widener to reach vanilla's display-entity setters and are
+  never saved to disk (`shouldBeSaved()` is overridden), so restarts leave no leftovers.
+
+## Lyrics overlay (LRCLib)
+
+The mod can show **synchronized lyrics** of the current song on screen (karaoke style),
+fetched from [**LRCLib**](https://lrclib.net) — a free, open lyrics database with a
+public API that needs **no key**. The lyrics advance with the song and, thanks to the
+pause detection, **freeze on the current line while Spotify is paused** (resuming
+continues from the same elapsed time — the paused duration is excluded from the song
+clock, so the lyrics never skip ahead). The overlay can be anchored to any of **9 screen
+positions** (top/middle/bottom x left/center/right), flush against the edges (no margin)
+— see the F10 menu below or `/craftify lyrics position`. Lines longer than **280 px**
+are **wrapped** (word-aware) and the block is capped at **4 rows**, so it never grows
+into the HUD elements.
+
+**Pause/resume sync:** the line is frozen at the moment the pause actually happened, not
+when the poll detected it. When a state change (pause, resume or new song) is detected,
+the tracker runs a short **confirmation burst** (a few polls at ~100 ms) and anchors the
+transition to the **midpoint** of the window where it occurred (last playing ↔ first
+paused, and last paused ↔ first playing). That halves the poll-quantization error and
+removes the systematic lag of using the detection times, so after resuming the line
+continues from where the song really stopped (within ~0.1–0.25 s instead of up to 1 s).
+When the **song changes**, the whole estimate is reset — no leftover pause offset leaks
+into the new song's clock.
+
+### Sharing lyrics with other players
+
+The player can choose to **share the current line** with the rest of the server: the mod
+sends it over `craftify:lyricsline` (PROTOCOL.md §6) and the server renders it as a
+**hologram** above the player. Sharing is **opt-in and off by default**: enable it from
+the F10 menu (Lyrics options -> Share lyrics) or with `/craftify lyrics share on`. While
+sharing, the line updates on every line change, pauses freeze the hologram, and toggling
+it off clears it.
+
+### F10 menu (general)
+
+Pressing **F10** (rebindable in the Controls screen, "Open Craftify Menu") opens the
+**general Craftify menu**, a real in-game screen with vanilla GUI icons:
+
+- **General options**: `Check Spotify` (prints the full status to the chat, same as
+  `/craftify spotify`) and `Packet sending: ON/OFF` (pauses/resumes the packets, same as
+  `/craftify send`).
+- **Submenus**: `Lyrics options` (overlay toggle, sharing and position) and `Lyrics
+  search` (the LRCLib search box with clickable candidates).
+- `Done` closes the menu.
+
+The **Lyrics options** submenu has the two toggles (overlay / share), an **Appearance**
+submenu and a **3x3 position picker** (TL TC TR / ML MC MR / BL BC BR) that anchors the
+overlay flush to that edge or corner. The **Appearance** submenu lets you adjust:
+
+- **Size** — text scale of the overlay from 50% to 300% (a slider, applied live).
+- **Opacity** — from 10% to 100% (also a slider; dims the text, the header and the
+  backdrop).
+- **Color** — a palette of presets (white, yellow, gold, green, aqua, pink, red, gray)
+  plus a custom hex box (`#RRGGBB`) to type any color.
+
+All three are applied immediately and persisted in `config/craftify.json`. The **Lyrics
+search** submenu searches LRCLib and lists up to 8 candidates; clicking one prints its
+details to the chat for debugging. The same options are available via commands
+(`/craftify lyrics on|off`, `/craftify lyrics share on|off`, `/craftify lyrics position
+<pos>`, `/craftify menu`, or bare `/craftify lyrics` to open the lyrics submenu directly).
+
+- The current line is white, the previous/next lines are dimmed, with a small track header
+  and a semi-transparent backdrop.
+- The lookup uses LRCLib's **search** endpoint with **fuzzy matching** (Levenshtein) and
+  title/artist cleaning (removes `- Remastered`, `(Remix)`, `feat. X`, `- Topic`, etc.),
+  so titles that don't match exactly still resolve — the same approach as the Forawn app.
+- The search is **order-independent**: it queries by field (`track_name` + `artist_name`)
+  in both alignments and the candidate match accepts `Song - Artist` or `Artist - Song`,
+  since the detected window title order varies by OS/version. Multi-artist strings
+  (`"A; B"`) are handled too.
+- Lyrics are fetched **asynchronously** when the song changes (never on the render thread)
+  and **cached per song** (LRU, 24 songs), so the same song is not re-fetched; a 429 rate
+  limit or a missing result is treated as "no lyrics".
+- Instrumental tracks show `♪ Instrumental`; a missing result shows nothing.
+- The overlay respects the hidden HUD (F1) and works in singleplayer too (it is
+  client-side only, the plugin is not involved).
+- Toggle: `/craftify lyrics on|off|toggle` (enabled by default).
+
+**Note on sync:** the song start is taken as the moment the mod detects the new track
+(the window title changes at the song boundary, within one poll ~0.5 s), so the lyrics
+may be off by up to ~0.5–1 s. Replays of the same song reuse the cached lines.
+
+## Commands
+
+In-game (singleplayer world or connected to a server):
+
+```
+/craftify spotify
+/craftify send on|off|toggle
+/craftify menu              (opens the general F10 menu)
+/craftify lyrics            (opens the lyrics options submenu)
+/craftify lyrics on|off|toggle
+/craftify lyrics share on|off|toggle
+/craftify lyrics position <pos>   (topleft, topcenter, topright, middleleft,
+                                  middlecenter, middleright, bottomleft,
+                                  bottomcenter, bottomright)
+/craftify lyrics search [song artist]
+```
+
+### `/craftify spotify` — status and verification
+
+Shows:
+
+1. The detected operating system.
+2. Whether the Spotify process is running (and with which executable).
+3. The current state (playing / no active song / closed) and the title.
+4. Whether packet sending is active, paused or inactive.
+
+Example output:
+
+```
+[Craftify] Operating system: WINDOWS
+[Craftify] Spotify process (Spotify.exe): running
+[Craftify] State: playing
+[Craftify] Current title: My Favorite Song - My Artist
+[Craftify] Lyrics: enabled (LRCLib)
+[Craftify] Lyrics track: My Favorite Song - My Artist
+[Craftify] Lyrics state: 42 synced line(s) loaded
+[Craftify] Lyrics overlay: rendering (1250 frames)
+[Craftify] Packet sending: active (real-time song change detection)
+```
+
+The lyrics section helps diagnosing the overlay: `Lyrics state` shows `loading` / `N
+synced line(s) loaded` / `instrumental` / `no synced lyrics found` and `Lyrics overlay`
+shows whether the HUD element is actually being drawn (`rendering (N frames)` vs `not
+rendering`) — so you can tell apart a data problem (no track / no lyrics) from a HUD
+problem (element never called).
+
+If the process is not running or the title could not be read, the command says so in red
+and, depending on the platform, suggests what to do (accept the Automation prompt on
+macOS, install `playerctl`/`xdotool` on Linux, etc.).
+
+On macOS the command also prints a **diagnostics** block that shows which stage of the
+read chain is failing:
+
+```
+[Craftify] macOS diagnostics:
+[Craftify]  - MediaRemote (nowplaying-cli): no bundled binary for this arch (os.arch=x86_64) -> AppleScript fallback
+[Craftify]  - AppleScript (fallback): blocked (Automation permission pending or denied)
+```
+
+The `MediaRemote` line reports whether the bundled binary is available for the machine's
+architecture and its raw output (e.g. `{"title":null,"artist":null,"playbackRate":null}`
+when nothing is playing). If the binary produced no output it also reports its **exit
+code** — `137` (SIGKILL) means macOS killed it at the code-signature check (the mod
+re-signs it ad-hoc on extraction, so this should not happen), `0` means it ran but
+printed nothing, and a timeout message means it hung. The `AppleScript` line reports
+whether the Automation permission is blocking the fallback — so you can tell apart an
+architecture problem, a binary problem, a MediaRemote problem and a permission problem
+at a glance.
+
+### `/craftify send` — pause/resume packet sending
+
+- `/craftify send off` pauses sending (tracking keeps reading, but no packets are sent).
+- `/craftify send on` resumes it and **sends the current Spotify state on the next read**.
+- `/craftify send toggle` switches between both.
+
+The pause state persists between worlds (only lost when closing the game). The
+`/craftify spotify` command reflects whether sending is paused.
+
+### `/craftify lyrics` — lyrics overlay
+
+- `/craftify lyrics` (no arguments) opens the options menu (same as F10).
+- `/craftify lyrics on` / `off` / `toggle` enable, disable or switch the LRCLib lyrics
+  overlay (enabled by default).
+- `/craftify lyrics share on` / `off` / `toggle` share the current lyric line with other
+  players (server hologram; off by default).
+- `/craftify lyrics search <song artist>` searches LRCLib and lists the candidates (up
+  to 8) with `[synced m:ss]` / `[plain only]` / `[instrumental]` tags, for debugging a
+  miss. Without arguments it searches the currently detected song.
+- `/craftify spotify` shows the lyrics diagnostics: `Lyrics state` (loading / loaded /
+  instrumental / not found), `Lyrics detail` (why: matched result, only plain lyrics,
+  HTTP 429 rate limit, network error, no match among N results) and `Lyrics overlay`
+  (whether the HUD element is actually drawing).
+
+## See your own name in third person (F5)
+
+By default Minecraft does **not show the player's own nametag** in first or third person:
+the client hides it because the local player matches the camera
+(`entity == minecraft.getCameraEntity()` in `LivingEntityRenderer#shouldShowName`).
+
+The mod enables it: with the camera in third person (F5), you will see your **own name**
+floating above your head — and, if the server runs the plugin in nametag mode, also the
+song you're listening to (the plugin renders it via scoreboard teams, which the mixin
+displays).
+
+- Implementation: `LivingEntityRendererMixin` (registered in
+  `craftify.client.mixins.json`), injected into `shouldShowName`.
+- It only activates when looking at yourself in third person: it does not affect first
+  person or spectating other players, and it respects the hidden HUD (F1) state.
+
+## Packet sending
+
+While the player is in a world (singleplayer or connected to a server), a separate thread
+reads the Spotify state with **adaptive polling** and sends the `craftify:title` packet to
+the server **only when the state changes** (not in a loop):
+
+- **every ~0.5 s** while Spotify is running → near real-time song changes;
+- **every ~5 s** (backoff) when Spotify is closed, to avoid wasting resources;
+- joining a world sends the initial state;
+- every song change sends `state: "playing"` with the new title;
+- when Spotify is paused, it sends `state: "paused"` (empty track);
+- if Spotify is running but its state could not be determined, it sends `state: "no_track"`;
+- when Spotify closes, it sends `state: "closed"`.
+
+Sending can be **paused and resumed** with [`/craftify send`](#craftify-send--pauseresume-packet-sending).
+
+Tracking starts with `ClientPlayConnectionEvents.JOIN` and stops on
+`DISCONNECT`. OS reads happen on a `daemon` thread so rendering is never blocked.
+
+### Detection cost
+
+The cost of each query was measured (Windows 11, Java 26):
+
+| Probe | Cost per query |
+|-------|--------------------|
+| `tasklist` (process) | ~110 ms |
+| PowerShell (`MainWindowTitle`) | ~1,100 ms |
+| Old Windows poll (tasklist + PowerShell) | ~1,060 ms |
+| **Current Windows poll (JNA/Win32)** | **~10–60 ms** (first native load ~500 ms) |
+| `osascript` (title, macOS) | ~200–500 ms |
+| **Current macOS poll** | **~1–10 ms** native process check + **~200–500 ms** AppleScript for the track (the window title is the account tier, not the song) |
+| Linux poll (`playerctl` or `pgrep` + `xdotool`) | ~10–80 ms (light OS processes) |
+| LRCLib lyrics fetch (on song change only, async, cached) | ~200–500 ms, once per song |
+
+The bottleneck was **PowerShell startup** (~1.1 s per invocation) on Windows and
+**AppleScript startup** (~200–500 ms) on macOS. That's why the mod uses **native JNA
+probes** for process detection on both: `Toolhelp32` + `EnumWindows` on Windows,
+`CGWindowListCopyWindowInfo` on macOS — on the order of milliseconds. On Windows the
+native probe also reads the title (its window title does change with the song); on macOS
+the track comes from Spotify's AppleScript dictionary, since the window title never
+contains the song. If JNA is unavailable, it falls back to the CLI (slow but functional).
+On Linux the OS processes are already light, so the probe uses `playerctl` (MPRIS) as the
+main method and `xdotool` as a backup.
+
+With the 500 ms interval, each effective cycle lasts ~0.5–0.6 s on Windows and Linux and
+~0.5–1 s on macOS while playing, with negligible CPU cost.
+
+## Build
+
+```bash
+cd CraftifyMod
+./gradlew build
+```
+
+The JAR ends up in `CraftifyMod/build/libs/CraftifyMod-1.0.1.jar` and installs like any
+Fabric mod in the client's `mods` folder.
+
+### Bundled third-party binaries
+
+The mod bundles two small OS binaries inside the JAR (extracted to the user's temp
+directory on first use, no root needed):
+
+- **playerctl** (Linux, x86_64/aarch64) — MPRIS player control, [MIT
+  license](https://github.com/altdesktop/playerctl/blob/master/COPYING), together with its
+  companion `libplayerctl.so.2` (the official release binary is dynamically linked against
+  it, so the mod bundles both and runs it with `LD_LIBRARY_PATH`).
+- **nowplaying-cli** v2.1.0 (macOS, arm64) — reads the now-playing track via the private
+  MediaRemote framework, [GPL-3.0](https://github.com/kirtan-shah/nowplaying-cli).
+  This project is GPL-3.0 as well, so bundling it is compatible; the binary can be
+  replaced/relinked by rebuilding the mod. Its private-framework usage may break on
+  future macOS updates — the AppleScript fallback covers that case. The v2.1.0 build
+  requires two companion files next to the binary to work on macOS 15.4+
+  (`share/nowplaying-cli/scripts/mediaremote-mini.pl` + `lib/nowplaying-cli/MediaRemoteMini.dylib`);
+  the mod bundles all three and extracts them together.
+
+To update or re-fetch them:
+
+```bash
+cd CraftifyMod
+bash scripts/fetch-linux-playerctl.sh   # Linux (binary + libplayerctl.so.2)
+curl -L -o src/main/resources/assets/craftify/native/macos/arm64/nowplaying-cli \
+  https://github.com/kirtan-shah/nowplaying-cli/releases/download/v2.1.0/nowplaying-cli
+# nowplaying-cli v2.1.0 companion helper files (macOS 15.4+); fetched from the Homebrew bottle:
+#   src/main/resources/assets/craftify/native/macos/arm64/share/nowplaying-cli/scripts/mediaremote-mini.pl
+#   src/main/resources/assets/craftify/native/macos/arm64/lib/nowplaying-cli/MediaRemoteMini.dylib
+```
+
+## Project configuration
+
+- group: mod
+- template: fabric
+- language: java
+- mc version: 1.21.11
+- loom version: 1.14.10 (remapping)
+- loader version: 0.19.3
+- fabric api version: 0.141.6+1.21.11
+- environment: `*` (client + server; the Spotify detection is client-only code)
+
+- mod id: craftify
+- mod name: craftify
+- mod version: 1.0.2+1.21.11
+- main class: org.foranly.craftify.Craftify (registers the payloads and the server side)
+- client entrypoint: org.foranly.craftify.client.CraftifyClient
+- access widener: src/main/resources/craftify.accesswidener
+
+- group id: org.foranly
+- artifact id: CraftifyMod
+
+## Modified build notes (1.21.11)
+
+- Target: Minecraft 1.21.11, Fabric Loader 0.19.3, Fabric API 0.141.6+1.21.11, Java 21.
+- Spotify remains the preferred detector. On Windows, PotPlayer and other configured player processes are checked if Spotify is not actively playing. This fallback reads application window captions; it is not a universal Windows media-session implementation, and a player must expose its current track in its title bar.
+- Automatic normal-chat lyrics are disabled by default. Enable with `/craftify lyrics chat on`; disable with `/craftify lyrics chat off`; inspect with `/craftify lyrics chat status`.
+- Build locally from `CraftifyMod/` with `./gradlew build` (Windows: `gradlew.bat build`).
+- Alternatively, push this folder/repository to GitHub and run **Actions → Build Craftify Fabric Mod → Run workflow**. The workflow uploads the built JAR as an artifact.

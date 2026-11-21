@@ -1,0 +1,36 @@
+package org.foranly.craftifyplugin;
+
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.foranly.craftifyplugin.display.LyricsDisplay;
+import org.foranly.craftifyplugin.hologram.HologramManager;
+import org.foranly.craftifyplugin.nametag.NametagManager;
+
+import java.util.UUID;
+
+/** Clears the state and the display when the player disconnects (PROTOCOL.md §4.1). */
+public final class PlayerListener implements Listener {
+
+    private final SpotifyStateManager stateManager;
+    private final HologramManager holograms;
+    private final NametagManager nametags;
+    private final LyricsDisplay lyricsDisplay;
+
+    public PlayerListener(SpotifyStateManager stateManager, HologramManager holograms,
+                          NametagManager nametags, LyricsDisplay lyricsDisplay) {
+        this.stateManager = stateManager;
+        this.holograms = holograms;
+        this.nametags = nametags;
+        this.lyricsDisplay = lyricsDisplay;
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        UUID uuid = event.getPlayer().getUniqueId();
+        stateManager.remove(uuid);
+        nametags.remove(uuid);
+        holograms.remove(uuid);
+        lyricsDisplay.remove(uuid);
+    }
+}
