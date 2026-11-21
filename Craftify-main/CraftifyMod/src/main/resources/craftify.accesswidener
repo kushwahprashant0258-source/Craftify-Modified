@@ -1,4 +1,4 @@
-accessWidener v2 official
+accessWidener v2 named
 
 # Display entities keep their configuration setters private; the server side of the mod
 # uses them to configure the TextDisplay holograms (title / shared lyric line).
