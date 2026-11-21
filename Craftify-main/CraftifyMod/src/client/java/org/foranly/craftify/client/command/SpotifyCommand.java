@@ -5,7 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import java.util.List;
 import java.util.function.Consumer;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -30,35 +30,35 @@ public final class SpotifyCommand {
     }
 
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
-        dispatcher.register(ClientCommands.literal("craftify")
-                .then(ClientCommands.literal("menu")
+        dispatcher.register(ClientCommandManager.literal("craftify")
+                .then(ClientCommandManager.literal("menu")
                         .executes(ctx -> {
-                            Minecraft.getInstance().gui.setScreen(new CraftifyMenuScreen());
+                            Minecraft.getInstance().setScreen(new CraftifyMenuScreen());
                             return 1;
                         }))
-                .then(ClientCommands.literal("spotify")
+                .then(ClientCommandManager.literal("spotify")
                         .executes(SpotifyCommand::executeSpotify))
-                .then(ClientCommands.literal("send")
-                        .then(ClientCommands.literal("on")
+                .then(ClientCommandManager.literal("send")
+                        .then(ClientCommandManager.literal("on")
                                 .executes(ctx -> setSending(ctx, false)))
-                        .then(ClientCommands.literal("off")
+                        .then(ClientCommandManager.literal("off")
                                 .executes(ctx -> setSending(ctx, true)))
-                        .then(ClientCommands.literal("toggle")
+                        .then(ClientCommandManager.literal("toggle")
                                 .executes(ctx -> setSending(ctx, !SpotifyTracker.isPaused()))))
-                .then(ClientCommands.literal("lyrics")
+                .then(ClientCommandManager.literal("lyrics")
                         .executes(ctx -> openLyricsScreen(ctx))
-                        .then(ClientCommands.literal("on")
+                        .then(ClientCommandManager.literal("on")
                                 .executes(ctx -> setLyrics(ctx, true)))
-                        .then(ClientCommands.literal("off")
+                        .then(ClientCommandManager.literal("off")
                                 .executes(ctx -> setLyrics(ctx, false)))
-                        .then(ClientCommands.literal("toggle")
+                        .then(ClientCommandManager.literal("toggle")
                                 .executes(ctx -> setLyrics(ctx, !LyricsManager.instance().isEnabled())))
-                        .then(ClientCommands.literal("chat")
-                                .then(ClientCommands.literal("on")
+                        .then(ClientCommandManager.literal("chat")
+                                .then(ClientCommandManager.literal("on")
                                         .executes(ctx -> setLyricsChat(ctx, true)))
-                                .then(ClientCommands.literal("off")
+                                .then(ClientCommandManager.literal("off")
                                         .executes(ctx -> setLyricsChat(ctx, false)))
-                                .then(ClientCommands.literal("status")
+                                .then(ClientCommandManager.literal("status")
                                         .executes(ctx -> {
                                             boolean enabled = LyricsManager.instance().isChatEnabled();
                                             ctx.getSource().sendFeedback(Component.literal("[Craftify] Automatic chat lyrics: "
@@ -66,20 +66,20 @@ public final class SpotifyCommand {
                                                     .withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY));
                                             return 1;
                                         })) )
-                        .then(ClientCommands.literal("share")
-                                .then(ClientCommands.literal("on")
+                        .then(ClientCommandManager.literal("share")
+                                .then(ClientCommandManager.literal("on")
                                         .executes(ctx -> setShared(ctx, true)))
-                                .then(ClientCommands.literal("off")
+                                .then(ClientCommandManager.literal("off")
                                         .executes(ctx -> setShared(ctx, false)))
-                                .then(ClientCommands.literal("toggle")
+                                .then(ClientCommandManager.literal("toggle")
                                         .executes(ctx -> setShared(ctx, !LyricsManager.instance().isShared()))))
-                        .then(ClientCommands.literal("search")
+                        .then(ClientCommandManager.literal("search")
                                 .executes(ctx -> searchLyrics(ctx, null))
-                                .then(ClientCommands.argument("query", StringArgumentType.greedyString())
+                                .then(ClientCommandManager.argument("query", StringArgumentType.greedyString())
                                         .executes(ctx -> searchLyrics(ctx,
                                                 StringArgumentType.getString(ctx, "query")))))
-                        .then(ClientCommands.literal("position")
-                                .then(ClientCommands.argument("pos", StringArgumentType.word())
+                        .then(ClientCommandManager.literal("position")
+                                .then(ClientCommandManager.argument("pos", StringArgumentType.word())
                                         .executes(ctx -> setPosition(ctx,
                                                 StringArgumentType.getString(ctx, "pos")))))));
     }
@@ -246,7 +246,7 @@ public final class SpotifyCommand {
     }
 
     private static int openLyricsScreen(CommandContext<FabricClientCommandSource> context) {
-        Minecraft.getInstance().gui.setScreen(new LyricsOptionsScreen());
+        Minecraft.getInstance().setScreen(new LyricsOptionsScreen());
         return 1;
     }
 

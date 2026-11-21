@@ -48,7 +48,7 @@ public final class LyricsOptionsScreen extends Screen {
                 .build();
 
         Button appearanceButton = Button.builder(Component.literal("Appearance (size / opacity / color)"),
-                        button -> Minecraft.getInstance().gui.setScreen(new LyricsAppearanceScreen(this)))
+                        button -> Minecraft.getInstance().setScreen(new LyricsAppearanceScreen(this)))
                 .bounds(centerX - 100, y + 52, 200, 20)
                 .build();
 
@@ -72,7 +72,7 @@ public final class LyricsOptionsScreen extends Screen {
         }
 
         Button backButton = Button.builder(Component.literal("Back"),
-                        button -> Minecraft.getInstance().gui.setScreen(new CraftifyMenuScreen()))
+                        button -> Minecraft.getInstance().setScreen(new CraftifyMenuScreen()))
                 .bounds(centerX - 100, gridY + 66, 200, 20)
                 .build();
 
@@ -107,6 +107,6 @@ public final class LyricsOptionsScreen extends Screen {
 
     @Override
     public void onClose() {
-        Minecraft.getInstance().gui.setScreen(null);
+        Minecraft.getInstance().setScreen(null);
     }
 }

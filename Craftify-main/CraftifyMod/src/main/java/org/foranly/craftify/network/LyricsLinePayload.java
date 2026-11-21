@@ -39,7 +39,7 @@ public record LyricsLinePayload(String json) implements CustomPacketPayload {
      * entrypoint so both physical sides accept it.
      */
     public static void register() {
-        PayloadTypeRegistry.serverboundPlay().register(TYPE, CODEC);
+        PayloadTypeRegistry.playC2S().register(TYPE, CODEC);
     }
 
     /**

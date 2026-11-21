@@ -96,7 +96,7 @@ public final class CraftifyMenuScreen extends Screen {
      * {@code setScreenAndShow} causes with the screen fade-in).
      */
     private static void openScreen(Screen screen) {
-        Minecraft.getInstance().gui.setScreen(screen);
+        Minecraft.getInstance().setScreen(screen);
     }
 
     /**
@@ -119,6 +119,6 @@ public final class CraftifyMenuScreen extends Screen {
 
     @Override
     public void onClose() {
-        Minecraft.getInstance().gui.setScreen(null);
+        Minecraft.getInstance().setScreen(null);
     }
 }

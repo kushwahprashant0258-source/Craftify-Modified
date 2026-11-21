@@ -51,7 +51,7 @@ public record SpotifyTitlePayload(String json) implements CustomPacketPayload {
      * with this mod needs it to receive).
      */
     public static void register() {
-        PayloadTypeRegistry.serverboundPlay().register(TYPE, CODEC);
+        PayloadTypeRegistry.playC2S().register(TYPE, CODEC);
     }
 
     /** Builds a payload from the state, the title and the capture moment. */

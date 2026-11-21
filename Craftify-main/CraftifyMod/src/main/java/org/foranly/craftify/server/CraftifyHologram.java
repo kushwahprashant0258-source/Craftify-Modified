@@ -3,7 +3,7 @@ package org.foranly.craftify.server;
 import com.mojang.math.Transformation;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Display;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -22,7 +22,7 @@ public final class CraftifyHologram extends Display.TextDisplay {
     private static final int BACKGROUND = 0x78000000;
 
     public CraftifyHologram(ServerLevel level) {
-        super(EntityTypes.TEXT_DISPLAY, level);
+        super(EntityType.TEXT_DISPLAY, level);
     }
 
     /** Applies the visual configuration shared by all Craftify holograms. */

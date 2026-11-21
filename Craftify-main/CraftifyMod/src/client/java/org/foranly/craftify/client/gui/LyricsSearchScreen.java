@@ -99,7 +99,7 @@ public final class LyricsSearchScreen extends Screen {
         }
 
         Button backButton = Button.builder(Component.literal("Back"),
-                        button -> Minecraft.getInstance().gui.setScreen(new CraftifyMenuScreen()))
+                        button -> Minecraft.getInstance().setScreen(new CraftifyMenuScreen()))
                 .bounds(centerX - 100, resultY + rows * 22 + 8, 200, 20)
                 .build();
         this.addRenderableWidget(backButton);
@@ -188,6 +188,6 @@ public final class LyricsSearchScreen extends Screen {
 
     @Override
     public void onClose() {
-        Minecraft.getInstance().gui.setScreen(null);
+        Minecraft.getInstance().setScreen(null);
     }
 }

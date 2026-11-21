@@ -85,7 +85,7 @@ public final class LyricsAppearanceScreen extends Screen {
                 .build());
 
         this.addRenderableWidget(Button.builder(Component.literal("Back"),
-                        button -> Minecraft.getInstance().gui.setScreen(parent))
+                        button -> Minecraft.getInstance().setScreen(parent))
                 .bounds(centerX - 100, swatchY + 52, 200, 20)
                 .build());
     }
@@ -129,7 +129,7 @@ public final class LyricsAppearanceScreen extends Screen {
 
     @Override
     public void onClose() {
-        Minecraft.getInstance().gui.setScreen(parent);
+        Minecraft.getInstance().setScreen(parent);
     }
 
     /** A slider that applies its value to the lyrics manager live and shows a formatted label. */

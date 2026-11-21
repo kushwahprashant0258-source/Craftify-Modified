@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -118,7 +119,7 @@ public final class LyricsManager {
         this.scale = clamp(config.getLyricsScale(), MIN_SCALE, MAX_SCALE);
         this.opacity = Math.max(MIN_OPACITY, Math.min(MAX_OPACITY, config.getLyricsOpacity()));
         this.textColor = parseColor(config.getLyricsColor(), 0xFFFFFF);
-        HudElementRegistry.addFirst(Identifier.fromNamespaceAndPath("craftify", "lyrics"),
+        HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.fromNamespaceAndPath("craftify", "lyrics"),
                 (extractor, deltaTracker) -> render(extractor));
     }
 
