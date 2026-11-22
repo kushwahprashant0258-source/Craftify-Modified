@@ -29,7 +29,7 @@ public final class CraftifyMenuScreen extends Screen {
     @Override
     protected void init() {
         int centerX = this.width / 2;
-        int y = this.height / 2 - 66;
+        int y = this.height / 2 - 79;
 
         // General options
         this.sendingButton = Button.builder(sendingLabel(), button -> {
@@ -62,14 +62,21 @@ public final class CraftifyMenuScreen extends Screen {
                 button -> openScreen(new LyricsSearchScreen()),
                 "Search LRCLib for a song and inspect the candidates");
 
-        Button doneButton = Button.builder(Component.literal("Done"), button -> this.onClose())
+        Button maceButton = Button.builder(Component.literal("Mace D-taps"),
+                        button -> openScreen(new MaceDTapsScreen(this)))
                 .bounds(centerX - 100, y + 104, 200, 20)
+                .tooltip(Tooltip.create(Component.literal("Mace d-tap types, key binds, timing and the name tag health bar")))
+                .build();
+
+        Button doneButton = Button.builder(Component.literal("Done"), button -> this.onClose())
+                .bounds(centerX - 100, y + 130, 200, 20)
                 .build();
 
         this.addRenderableWidget(this.sendingButton);
         this.addRenderableWidget(checkButton);
         this.addRenderableWidget(lyricsButton);
         this.addRenderableWidget(searchButton);
+        this.addRenderableWidget(maceButton);
         this.addRenderableWidget(doneButton);
     }
 

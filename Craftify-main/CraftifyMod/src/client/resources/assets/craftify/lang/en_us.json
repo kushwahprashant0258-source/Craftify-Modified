@@ -1,5 +1,7 @@
 {
   "key.category.craftify.main": "Larper🥀",
   "key.craftify.lyrics": "Open Larper🥀 Menu",
-  "key.craftify.dtap": "Mace D-tap (smash + follow-up)"
+  "key.craftify.dtap.elytra": "Elytra D-tap",
+  "key.craftify.dtap.follow_up": "Follow-up slam",
+  "key.craftify.dtap.spear_mace": "Spear > Mace D-tap"
 }

@@ -33,7 +33,7 @@ public class CraftifyClient implements ClientModInitializer {
         // so the same registration also serves a dedicated server running this mod.
         // Registers the lyrics HUD element (LRCLib overlay, toggle: F10 / /larper lyrics).
         LyricsManager.instance();
-        org.foranly.craftify.client.dtap.DTapMacro.register();
+        org.foranly.craftify.client.dtap.DTapEngine.register();
         // F10 opens the general Craftify menu (in-game only).
         KeyBindingHelper.registerKeyBinding(LYRICS_KEY);
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
