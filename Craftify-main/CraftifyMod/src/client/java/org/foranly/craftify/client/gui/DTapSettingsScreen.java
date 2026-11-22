@@ -25,7 +25,7 @@ public final class DTapSettingsScreen extends DTapScreenBase {
         toggle("Enabled", () -> cfg.enabled, v -> cfg.enabled = v, "Turn this d-tap on or off");
 
         if (type != DTapType.FOLLOW_UP) {
-            stepper("Gap between hits", "ticks", () -> cfg.gapTicks, v -> cfg.gapTicks = v, 0, 20,
+            stepper(type.isGrapple() ? "Gap between throws" : "Gap between hits", "ticks", () -> cfg.gapTicks, v -> cfg.gapTicks = v, 0, 20,
                     "20 ticks = 1 second. 0 = same tick. If the second hit does not pop, raise it by 1.");
             toggle("Use ping-based gap", () -> cfg.pingGapEnabled, v -> {
                 cfg.pingGapEnabled = v;

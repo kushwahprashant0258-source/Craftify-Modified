@@ -280,7 +280,13 @@ public final class DTapEngine {
     private static void start(Minecraft mc, DTapType type, LivingEntity forced) {
         DTapConfig.TypeSettings cfg = DTapConfig.get().of(type);
         LivingEntity living;
-        if (forced != null) {
+        if (type.isGrapple() && forced == null) {
+            living = findAimedTarget(mc, 48.0D, 20.0D);
+            if (living == null) {
+                say(mc, "Look towards a player (within 48 blocks) first.");
+                return;
+            }
+        } else if (forced != null) {
             living = forced;
         } else if (mc.hitResult instanceof EntityHitResult hit && hit.getEntity() instanceof LivingEntity found) {
             living = found;
@@ -317,6 +323,34 @@ public final class DTapEngine {
                 }
                 QUEUE.add(new Step(0, m -> hit(m, density)));
             }
+            case AERIAL_GRAPPLE, GROUND_GRAPPLE, FORCE_GRAPPLE -> {
+                int pearl = findSlot(mc, st -> st.is(Items.ENDER_PEARL), -1);
+                if (pearl < 0) {
+                    say(mc, "No Ender Pearl in your hotbar.");
+                    return;
+                }
+                if (density < 0) {
+                    say(mc, "No mace in your hotbar.");
+                    return;
+                }
+                if (type == DTapType.FORCE_GRAPPLE) {
+                    int wind = findSlot(mc, st -> st.is(Items.WIND_CHARGE), -1);
+                    if (wind < 0) {
+                        say(mc, "No Wind Charge in your hotbar.");
+                        return;
+                    }
+                    QUEUE.add(new Step(0, m -> throwAt(m, wind, feetPoint(), false)));
+                    QUEUE.add(new Step(gap, m -> throwAt(m, pearl, bodyPoint(), true))
+                            .waitUntil(m -> target != null && !target.onGround(), 12));
+                } else if (type == DTapType.AERIAL_GRAPPLE) {
+                    QUEUE.add(new Step(0, m -> throwAt(m, pearl, bodyPoint(), true)));
+                } else {
+                    QUEUE.add(new Step(0, m -> throwAt(m, pearl, feetPoint(), true)));
+                }
+                // Wait for the pearl to land us next to the target, then swing the mace.
+                QUEUE.add(new Step(gap, m -> hit(m, density))
+                        .waitUntil(m -> target != null && m.player.distanceTo(target) <= 4.5F, 60));
+            }
             case SPEAR_MACE -> {
                 int spear = findSlot(mc, s -> s.is(ItemTags.SPEARS), -1);
                 if (spear < 0) {
@@ -345,6 +379,58 @@ public final class DTapEngine {
         mc.player.getInventory().setSelectedSlot(slot);
         mc.gameMode.attack(mc.player, target);
         mc.player.swing(InteractionHand.MAIN_HAND);
+    }
+
+    /** Player nearest to where you are looking (within angle/distance), or null. */
+    private static LivingEntity findAimedTarget(Minecraft mc, double maxDist, double maxAngle) {
+        LivingEntity best = null;
+        double bestAngle = maxAngle;
+        for (AbstractClientPlayer other : mc.level.players()) {
+            if (other == mc.player || !other.isAlive() || other.isSpectator()) {
+                continue;
+            }
+            if (mc.player.distanceTo(other) > maxDist) {
+                continue;
+            }
+            double angle = angleError(mc.player, other);
+            if (angle < bestAngle) {
+                bestAngle = angle;
+                best = other;
+            }
+        }
+        return best;
+    }
+
+    private static Vec3 bodyPoint() {
+        return target.position().add(0, target.getBbHeight() * 0.35D, 0).add(target.getDeltaMovement());
+    }
+
+    private static Vec3 feetPoint() {
+        return target.position().add(target.getDeltaMovement().multiply(1, 0, 1));
+    }
+
+    /** Selects the slot, snaps the aim onto the point (pearl arc compensated) and uses the item. */
+    private static void throwAt(Minecraft mc, int slot, Vec3 point, boolean arc) {
+        if (target == null || !target.isAlive()) {
+            QUEUE.clear();
+            restore(mc);
+            return;
+        }
+        LocalPlayer player = mc.player;
+        Vec3 eye = player.getEyePosition();
+        double dx = point.x - eye.x;
+        double dz = point.z - eye.z;
+        double horizontal = Math.sqrt(dx * dx + dz * dz);
+        double dy = point.y - eye.y;
+        if (arc) {
+            // Ender pearl: speed 1.5, gravity 0.03 per tick -> aim a bit higher for the drop.
+            double ticks = Math.sqrt(dx * dx + dy * dy + dz * dz) / 1.5D;
+            dy += 0.5D * 0.03D * ticks * ticks;
+        }
+        player.setYRot((float) (Math.toDegrees(Math.atan2(dz, dx))) - 90.0F);
+        player.setXRot(Mth.clamp((float) (-Math.toDegrees(Math.atan2(dy, horizontal))), -90.0F, 90.0F));
+        player.getInventory().setSelectedSlot(slot);
+        mc.gameMode.useItem(player, InteractionHand.MAIN_HAND);
     }
 
     private static void restore(Minecraft mc) {

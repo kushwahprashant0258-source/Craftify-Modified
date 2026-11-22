@@ -4,5 +4,8 @@
   "key.craftify.dtap.elytra": "Elytra D-tap",
   "key.craftify.dtap.follow_up": "Follow-up slam",
   "key.craftify.dtap.spear_mace": "Spear > Mace D-tap",
+  "key.craftify.dtap.aerial_grapple": "Aerial Grapple",
+  "key.craftify.dtap.force_grapple": "Force Grapple",
+  "key.craftify.dtap.ground_grapple": "Ground Grapple",
   "key.craftify.dtap.auto": "Toggle Auto D-tap"
 }

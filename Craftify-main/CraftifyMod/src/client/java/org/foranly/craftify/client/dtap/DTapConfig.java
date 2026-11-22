@@ -100,7 +100,13 @@ public final class DTapConfig {
             cfg.auto.targetName = "";
         }
         for (DTapType type : DTapType.values()) {
-            TypeSettings s = cfg.types.computeIfAbsent(type.id, k -> new TypeSettings());
+            TypeSettings s = cfg.types.computeIfAbsent(type.id, k -> {
+                TypeSettings fresh = new TypeSettings();
+                if (type == DTapType.FORCE_GRAPPLE) {
+                    fresh.gapTicks = 3; // wind charge -> pearl
+                }
+                return fresh;
+            });
             if (s.pingGaps == null || s.pingGaps.length != PING_BUCKET_START.length) {
                 s.pingGaps = new int[]{s.gapTicks, s.gapTicks, s.gapTicks, s.gapTicks};
             }

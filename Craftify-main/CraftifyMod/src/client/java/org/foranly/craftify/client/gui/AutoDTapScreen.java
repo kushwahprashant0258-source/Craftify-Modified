@@ -23,7 +23,7 @@ public final class AutoDTapScreen extends DTapScreenBase {
                 "Same as the toggle key: aims and fires by itself once the requirements are met");
         textField("Target player", () -> cfg.targetName, v -> cfg.targetName = v, 16,
                 "Exact name of the player to hit. Only this player is ever targeted.");
-        cycle("D-tap to perform", DTapType.values(), () -> cfg.type, v -> cfg.type = v,
+        cycle("D-tap to perform", java.util.Arrays.stream(DTapType.values()).filter(t -> !t.isGrapple()).toArray(DTapType[]::new), () -> cfg.type, v -> cfg.type = v,
                 "Elytra D-tap fires while gliding; the others fire while falling");
         stepper("Min fall distance", "blocks", () -> cfg.minFallBlocks, v -> cfg.minFallBlocks = v, 2, 40,
                 "Blocks fallen before the slam counts (vanilla needs more than 1.5). More = more damage.");
