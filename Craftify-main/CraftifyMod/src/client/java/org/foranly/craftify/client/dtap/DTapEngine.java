@@ -109,6 +109,7 @@ public final class DTapEngine {
         autoKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.craftify.dtap.auto",
                 InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), CraftifyClient.CATEGORY));
         DTapConfig.get(); // load settings early
+        HealthHud.register();
         ClientTickEvents.END_CLIENT_TICK.register(DTapEngine::tick);
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
                 dispatcher.register(ClientCommandManager.literal("larper")
