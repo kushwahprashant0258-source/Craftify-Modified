@@ -402,7 +402,10 @@ public final class DTapEngine {
     }
 
     private static Vec3 bodyPoint() {
-        return target.position().add(0, target.getBbHeight() * 0.35D, 0).add(target.getDeltaMovement());
+        // Falling target: aim at the top of the hitbox so you land higher and keep more fall time.
+        boolean falling = !target.onGround() && target.getDeltaMovement().y < -0.1D;
+        double height = target.getBbHeight() * (falling ? 0.95D : 0.35D);
+        return target.position().add(0, height, 0).add(target.getDeltaMovement());
     }
 
     private static Vec3 feetPoint() {
