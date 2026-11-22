@@ -5,6 +5,7 @@ import java.util.ArrayDeque;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -12,11 +13,14 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -26,6 +30,7 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.Vec3;
 import org.foranly.craftify.client.CraftifyClient;
 import org.foranly.craftify.client.gui.MaceDTapsScreen;
 
@@ -44,10 +49,19 @@ public final class DTapEngine {
     private static final class Step {
         int delay;
         final Consumer<Minecraft> action;
+        /** Optional: wait (up to {@code timeout} ticks) until this is true before running. */
+        Predicate<Minecraft> until;
+        int timeout;
 
         Step(int delay, Consumer<Minecraft> action) {
             this.delay = delay;
             this.action = action;
+        }
+
+        Step waitUntil(Predicate<Minecraft> condition, int timeoutTicks) {
+            this.until = condition;
+            this.timeout = timeoutTicks;
+            return this;
         }
     }
 
@@ -56,11 +70,34 @@ public final class DTapEngine {
     private static int originalSlot;
     private static boolean restoreSlot;
 
+    /** Toggle key for Auto D-tap. */
+    private static KeyMapping autoKey;
+    private static boolean autoArmed;
+    private static int autoCooldown;
+    private static boolean warnedNoTarget;
+
     private DTapEngine() {
     }
 
     public static KeyMapping key(DTapType type) {
         return KEYS.get(type);
+    }
+
+    public static KeyMapping autoKey() {
+        return autoKey;
+    }
+
+    public static boolean isAutoArmed() {
+        return autoArmed;
+    }
+
+    public static void setAutoArmed(boolean armed) {
+        autoArmed = armed;
+        warnedNoTarget = false;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null) {
+            say(mc, "Auto D-tap " + (armed ? "ON" : "OFF"));
+        }
     }
 
     public static void register() {
@@ -69,6 +106,8 @@ public final class DTapEngine {
                     InputConstants.UNKNOWN.getValue(), CraftifyClient.CATEGORY);
             KEYS.put(type, KeyBindingHelper.registerKeyBinding(key));
         }
+        autoKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.craftify.dtap.auto",
+                InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), CraftifyClient.CATEGORY));
         DTapConfig.get(); // load settings early
         ClientTickEvents.END_CLIENT_TICK.register(DTapEngine::tick);
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
@@ -97,13 +136,25 @@ public final class DTapEngine {
                 }
             }
         }
+        boolean toggled = false;
+        while (autoKey.consumeClick()) {
+            toggled = !toggled;
+        }
+        if (toggled && mc.screen == null) {
+            setAutoArmed(!autoArmed);
+        }
         if (mc.screen != null) {
             QUEUE.clear();
             return;
         }
+        if (autoCooldown > 0) {
+            autoCooldown--;
+        }
         if (QUEUE.isEmpty()) {
             if (pressed != null) {
                 start(mc, pressed);
+            } else if (autoArmed && autoCooldown == 0) {
+                autoTick(mc);
             }
             return;
         }
@@ -114,9 +165,70 @@ public final class DTapEngine {
                 head.delay--;
                 return;
             }
+            if (head.until != null && !head.until.test(mc) && head.timeout-- > 0) {
+                return;
+            }
             QUEUE.pollFirst();
             head.action.accept(mc);
         }
+    }
+
+    // ------------------------------------------------------------- auto mode
+
+    /**
+     * Auto D-tap: while armed, aims at the named player and starts the chosen d-tap once the
+     * requirements are met (gliding for the elytra type, otherwise falling far enough).
+     */
+    private static void autoTick(Minecraft mc) {
+        DTapConfig.Auto auto = DTapConfig.get().auto;
+        if (auto.targetName.isBlank()) {
+            if (!warnedNoTarget) {
+                warnedNoTarget = true;
+                say(mc, "Auto D-tap: type a target player name in its settings first.");
+            }
+            return;
+        }
+        LocalPlayer player = mc.player;
+        AbstractClientPlayer victim = null;
+        for (AbstractClientPlayer other : mc.level.players()) {
+            if (other != player && other.isAlive()
+                    && other.getGameProfile().name().equalsIgnoreCase(auto.targetName.trim())) {
+                victim = other;
+                break;
+            }
+        }
+        if (victim == null) {
+            return;
+        }
+        boolean gliding = player.isFallFlying();
+        boolean ready = auto.type == DTapType.ELYTRA
+                ? gliding
+                : !player.onGround() && !gliding && player.fallDistance > auto.minFallBlocks;
+        if (!ready) {
+            return;
+        }
+        if (auto.aimEnabled) {
+            aimAt(player, victim, auto.aimSpeedPercent);
+        }
+        boolean aimed = mc.hitResult instanceof EntityHitResult hit && hit.getEntity() == victim;
+        if (aimed && player.distanceTo(victim) <= player.entityInteractionRange()) {
+            start(mc, auto.type);
+            autoCooldown = 40;
+        }
+    }
+
+    private static void aimAt(LocalPlayer player, Entity target, int speedPercent) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 to = target.getBoundingBox().getCenter();
+        double dx = to.x - eye.x;
+        double dy = to.y - eye.y;
+        double dz = to.z - eye.z;
+        double horizontal = Math.sqrt(dx * dx + dz * dz);
+        float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx))) - 90.0F;
+        float pitch = (float) (-Math.toDegrees(Math.atan2(dy, horizontal)));
+        float f = Mth.clamp(speedPercent / 100.0F, 0.05F, 1.0F);
+        player.setYRot(player.getYRot() + Mth.wrapDegrees(yaw - player.getYRot()) * f);
+        player.setXRot(Mth.clamp(player.getXRot() + (pitch - player.getXRot()) * f, -90.0F, 90.0F));
     }
 
     // ----------------------------------------------------------------- start
@@ -146,7 +258,8 @@ public final class DTapEngine {
                 }
                 QUEUE.add(new Step(0, m -> hit(m, first)));
                 QUEUE.add(new Step(0, m -> takeOffElytra(m, cfg.elytraOff)));
-                QUEUE.add(new Step(gap, m -> hit(m, density)));
+                QUEUE.add(new Step(gap, m -> hit(m, density))
+                        .waitUntil(m -> !m.player.isFallFlying() && m.player.fallDistance > 1.5D, 12));
             }
             case FOLLOW_UP -> {
                 if (density < 0) {

@@ -7,6 +7,7 @@ import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -66,17 +67,22 @@ abstract class DTapScreenBase extends Screen {
 
     /** A "label  [-] value [+]" row. */
     protected void stepper(String label, String unit, IntSupplier get, IntConsumer set, int min, int max, String tip) {
+        stepper(label, unit, get, set, min, max, 1, tip);
+    }
+
+    protected void stepper(String label, String unit, IntSupplier get, IntConsumer set, int min, int max,
+                           int step, String tip) {
         StringWidget name = label(cx() - 120, rowY + 6, label);
         StringWidget value = new StringWidget(cx() + 36, rowY + 6, 54, 10,
                 Component.literal(get.getAsInt() + " " + unit), this.font);
         Button minus = Button.builder(Component.literal("-"), b -> {
-                    set.accept(Math.max(min, get.getAsInt() - 1));
+                    set.accept(Math.max(min, get.getAsInt() - step));
                     DTapConfig.get().save();
                     value.setMessage(Component.literal(get.getAsInt() + " " + unit));
                 })
                 .bounds(cx() + 10, rowY, 20, 20).tooltip(Tooltip.create(Component.literal(tip))).build();
         Button plus = Button.builder(Component.literal("+"), b -> {
-                    set.accept(Math.min(max, get.getAsInt() + 1));
+                    set.accept(Math.min(max, get.getAsInt() + step));
                     DTapConfig.get().save();
                     value.setMessage(Component.literal(get.getAsInt() + " " + unit));
                 })
@@ -91,6 +97,23 @@ abstract class DTapScreenBase extends Screen {
     /** Text label whose box is exactly as wide as its text, so alignment does not matter. */
     protected StringWidget label(int x, int y, String text) {
         return new StringWidget(x, y, this.font.width(text), 10, Component.literal(text), this.font);
+    }
+
+    /** A "label  [text box]" row. */
+    protected EditBox textField(String label, java.util.function.Supplier<String> get,
+                                Consumer<String> set, int maxLength, String tip) {
+        this.addRenderableWidget(label(cx() - 120, rowY + 6, label));
+        EditBox box = new EditBox(this.font, cx() + 6, rowY, 114, 20, Component.literal(label));
+        box.setMaxLength(maxLength);
+        box.setValue(get.get());
+        box.setResponder(text -> {
+            set.accept(text);
+            DTapConfig.get().save();
+        });
+        box.setTooltip(Tooltip.create(Component.literal(tip)));
+        this.addRenderableWidget(box);
+        rowY += 24;
+        return box;
     }
 
     protected Button action(String label, Runnable run, String tip) {

@@ -40,7 +40,20 @@ public final class DTapConfig {
         public boolean playersOnly = true;
     }
 
+    /** Auto D-tap: aims at one named player and fires once the requirements are met. */
+    public static final class Auto {
+        /** Only this player is ever targeted. Empty = auto mode does nothing. */
+        public String targetName = "";
+        public DTapType type = DTapType.ELYTRA;
+        /** Blocks fallen before the slam counts (vanilla needs more than 1.5). */
+        public int minFallBlocks = 2;
+        public boolean aimEnabled = true;
+        /** Share of the remaining angle turned each tick (100 = instant, lower = smoother). */
+        public int aimSpeedPercent = 35;
+    }
+
     public Map<String, TypeSettings> types = new LinkedHashMap<>();
+    public Auto auto = new Auto();
     public HealthBar healthBar = new HealthBar();
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -74,6 +87,15 @@ public final class DTapConfig {
         }
         if (cfg.healthBar == null) {
             cfg.healthBar = new HealthBar();
+        }
+        if (cfg.auto == null) {
+            cfg.auto = new Auto();
+        }
+        if (cfg.auto.type == null) {
+            cfg.auto.type = DTapType.ELYTRA;
+        }
+        if (cfg.auto.targetName == null) {
+            cfg.auto.targetName = "";
         }
         for (DTapType type : DTapType.values()) {
             TypeSettings s = cfg.types.computeIfAbsent(type.id, k -> new TypeSettings());
