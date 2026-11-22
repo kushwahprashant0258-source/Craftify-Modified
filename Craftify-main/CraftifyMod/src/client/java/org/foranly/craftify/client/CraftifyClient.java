@@ -19,7 +19,7 @@ public class CraftifyClient implements ClientModInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger("craftify");
 
     /** Controls category shown in Options > Controls (translation: key.category.craftify.main). */
-    private static final KeyMapping.Category CATEGORY =
+    public static final KeyMapping.Category CATEGORY =
             KeyMapping.Category.register(Identifier.fromNamespaceAndPath("craftify", "main"));
 
     /** F10 opens the general Craftify menu. */
@@ -33,6 +33,7 @@ public class CraftifyClient implements ClientModInitializer {
         // so the same registration also serves a dedicated server running this mod.
         // Registers the lyrics HUD element (LRCLib overlay, toggle: F10 / /larper lyrics).
         LyricsManager.instance();
+        org.foranly.craftify.client.dtap.DTapMacro.register();
         // F10 opens the general Craftify menu (in-game only).
         KeyBindingHelper.registerKeyBinding(LYRICS_KEY);
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
