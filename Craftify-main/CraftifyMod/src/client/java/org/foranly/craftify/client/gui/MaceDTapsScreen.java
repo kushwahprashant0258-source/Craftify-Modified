@@ -6,7 +6,6 @@ import java.util.Map;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
@@ -37,9 +36,7 @@ public final class MaceDTapsScreen extends DTapScreenBase {
             DTapConfig.TypeSettings cfg = DTapConfig.get().of(type);
             int left = cx() - 155;
 
-            StringWidget name = new StringWidget(left, rowY + 6, 112, 10, Component.literal(type.title), this.font);
-            name.alignLeft();
-            this.addRenderableWidget(name);
+            this.addRenderableWidget(label(left, rowY + 6, type.title));
 
             Button bind = Button.builder(bindLabel(type), b -> {
                         binding = type;
@@ -101,7 +98,7 @@ public final class MaceDTapsScreen extends DTapScreenBase {
             InputConstants.Key newKey = event.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE
                     ? InputConstants.UNKNOWN
                     : InputConstants.Type.KEYSYM.getOrCreate(event.key());
-            mc.options.setKey(key, newKey);
+            key.setKey(newKey);
             KeyMapping.resetMapping();
             mc.options.save();
             binding = null;

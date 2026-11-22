@@ -66,8 +66,7 @@ abstract class DTapScreenBase extends Screen {
 
     /** A "label  [-] value [+]" row. */
     protected void stepper(String label, String unit, IntSupplier get, IntConsumer set, int min, int max, String tip) {
-        StringWidget name = new StringWidget(cx() - 120, rowY + 6, 130, 10, Component.literal(label), this.font);
-        name.alignLeft();
+        StringWidget name = label(cx() - 120, rowY + 6, label);
         StringWidget value = new StringWidget(cx() + 36, rowY + 6, 54, 10,
                 Component.literal(get.getAsInt() + " " + unit), this.font);
         Button minus = Button.builder(Component.literal("-"), b -> {
@@ -87,6 +86,11 @@ abstract class DTapScreenBase extends Screen {
         this.addRenderableWidget(value);
         this.addRenderableWidget(plus);
         rowY += 24;
+    }
+
+    /** Text label whose box is exactly as wide as its text, so alignment does not matter. */
+    protected StringWidget label(int x, int y, String text) {
+        return new StringWidget(x, y, this.font.width(text), 10, Component.literal(text), this.font);
     }
 
     protected Button action(String label, Runnable run, String tip) {
