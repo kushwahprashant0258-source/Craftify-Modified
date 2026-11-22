@@ -50,6 +50,8 @@ public final class DTapConfig {
         public boolean aimEnabled = true;
         /** Share of the remaining angle turned each tick (100 = instant, lower = smoother). */
         public int aimSpeedPercent = 35;
+        /** Show what auto mode is waiting for in the action bar. */
+        public boolean showStatus = true;
     }
 
     public Map<String, TypeSettings> types = new LinkedHashMap<>();

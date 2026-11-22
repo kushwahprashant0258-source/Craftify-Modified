@@ -17,7 +17,7 @@ public final class AutoDTapScreen extends DTapScreenBase {
     @Override
     protected void init() {
         DTapConfig.Auto cfg = DTapConfig.get().auto;
-        begin(8);
+        begin(9);
 
         toggle("Auto D-tap armed", DTapEngine::isAutoArmed, DTapEngine::setAutoArmed,
                 "Same as the toggle key: aims and fires by itself once the requirements are met");
@@ -31,6 +31,8 @@ public final class AutoDTapScreen extends DTapScreenBase {
                 "Turn your view toward the target while the requirements are met");
         stepper("Aim speed", "%", () -> cfg.aimSpeedPercent, v -> cfg.aimSpeedPercent = v, 5, 100, 5,
                 "Share of the remaining angle turned per tick. 100 = instant, lower = smoother on camera.");
+        toggle("Show status messages", () -> cfg.showStatus, v -> cfg.showStatus = v,
+                "Action-bar line showing what Auto D-tap is waiting for (target found, gliding, distance)");
         note("Needs the d-tap's own settings (gap, weapons, elytra off) to be set up too.");
         backButton();
     }

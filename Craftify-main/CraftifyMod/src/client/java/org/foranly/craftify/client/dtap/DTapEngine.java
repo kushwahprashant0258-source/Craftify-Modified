@@ -177,7 +177,9 @@ public final class DTapEngine {
 
     /**
      * Auto D-tap: while armed, aims at the named player and starts the chosen d-tap once the
-     * requirements are met (gliding for the elytra type, otherwise falling far enough).
+     * requirements are met (gliding for the elytra type, otherwise falling far enough) and the
+     * target is within reach. It does not need the crosshair to be exactly on the target: the
+     * server only checks reach, so the aim here mostly makes it look right.
      */
     private static void autoTick(Minecraft mc) {
         DTapConfig.Auto auto = DTapConfig.get().auto;
@@ -198,28 +200,64 @@ public final class DTapEngine {
             }
         }
         if (victim == null) {
+            status(mc, "player \"" + auto.targetName.trim() + "\" not found nearby");
             return;
         }
         boolean gliding = player.isFallFlying();
-        boolean ready = auto.type == DTapType.ELYTRA
-                ? gliding
-                : !player.onGround() && !gliding && player.fallDistance > auto.minFallBlocks;
+        double dist = Math.sqrt(victim.getBoundingBox().distanceToSqr(player.getEyePosition()));
+        boolean ready;
+        String need;
+        if (auto.type == DTapType.ELYTRA) {
+            ready = gliding;
+            need = "start gliding with the elytra";
+        } else {
+            double fallen = player.fallDistance;
+            ready = !player.onGround() && !gliding && fallen > auto.minFallBlocks;
+            need = "fall " + auto.minFallBlocks + "+ blocks (now " + String.format("%.1f", fallen) + ")";
+        }
         if (!ready) {
+            status(mc, "waiting: " + need + " | target " + String.format("%.1f", dist) + " blocks");
             return;
         }
         if (auto.aimEnabled) {
-            aimAt(player, victim, auto.aimSpeedPercent);
+            // Snap harder when close so the hit lines up.
+            aimAt(player, victim, dist < 8.0D ? Math.max(auto.aimSpeedPercent, 80) : auto.aimSpeedPercent);
         }
-        boolean aimed = mc.hitResult instanceof EntityHitResult hit && hit.getEntity() == victim;
-        if (aimed && player.distanceTo(victim) <= player.entityInteractionRange()) {
-            start(mc, auto.type);
-            autoCooldown = 40;
+        double reach = player.entityInteractionRange() + 0.4D;
+        if (dist <= reach && angleError(player, victim) <= 40.0D) {
+            status(mc, "FIRE");
+            start(mc, auto.type, victim);
+            if (!QUEUE.isEmpty()) {
+                autoCooldown = 40;
+            }
+        } else {
+            status(mc, "closing in | target " + String.format("%.1f", dist) + " blocks (reach "
+                    + String.format("%.1f", reach) + ")");
         }
+    }
+
+    private static int statusClock;
+
+    /** Action-bar progress line (every 10 ticks) so you can see what auto mode is waiting for. */
+    private static void status(Minecraft mc, String text) {
+        if (!DTapConfig.get().auto.showStatus) {
+            return;
+        }
+        if (statusClock++ % 10 == 0) {
+            say(mc, "Auto: " + text);
+        }
+    }
+
+    private static double angleError(LocalPlayer player, Entity target) {
+        Vec3 toTarget = target.getBoundingBox().getCenter().subtract(player.getEyePosition()).normalize();
+        double dot = Mth.clamp(player.getLookAngle().dot(toTarget), -1.0D, 1.0D);
+        return Math.toDegrees(Math.acos(dot));
     }
 
     private static void aimAt(LocalPlayer player, Entity target, int speedPercent) {
         Vec3 eye = player.getEyePosition();
-        Vec3 to = target.getBoundingBox().getCenter();
+        // Aim slightly ahead of where the target is moving.
+        Vec3 to = target.getBoundingBox().getCenter().add(target.getDeltaMovement());
         double dx = to.x - eye.x;
         double dy = to.y - eye.y;
         double dz = to.z - eye.z;
@@ -234,8 +272,18 @@ public final class DTapEngine {
     // ----------------------------------------------------------------- start
 
     private static void start(Minecraft mc, DTapType type) {
+        start(mc, type, null);
+    }
+
+    /** @param forced the entity to hit; {@code null} = the one under the crosshair. */
+    private static void start(Minecraft mc, DTapType type, LivingEntity forced) {
         DTapConfig.TypeSettings cfg = DTapConfig.get().of(type);
-        if (!(mc.hitResult instanceof EntityHitResult hit) || !(hit.getEntity() instanceof LivingEntity living)) {
+        LivingEntity living;
+        if (forced != null) {
+            living = forced;
+        } else if (mc.hitResult instanceof EntityHitResult hit && hit.getEntity() instanceof LivingEntity found) {
+            living = found;
+        } else {
             say(mc, "Aim at a player or mob first.");
             return;
         }
