@@ -36,7 +36,7 @@ public final class HealthHud {
                 });
     }
 
-    private static void render(net.minecraft.client.gui.GuiGraphicsExtractor g, float partial) {
+    private static void render(net.minecraft.client.gui.GuiGraphics g, float partial) {
         Minecraft mc = Minecraft.getInstance();
         DTapConfig.HealthBar cfg = DTapConfig.get().healthBar;
         if (!cfg.enabled || mc.level == null || mc.player == null || mc.options.hideGui) {

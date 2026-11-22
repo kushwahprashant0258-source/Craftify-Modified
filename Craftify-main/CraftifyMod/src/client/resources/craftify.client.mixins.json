@@ -4,8 +4,7 @@
   "package": "org.foranly.craftify.mixin.client",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "LivingEntityRendererMixin",
-    "EntityNameTagMixin"
+    "LivingEntityRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 0
