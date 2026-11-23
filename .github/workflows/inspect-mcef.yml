@@ -20,11 +20,12 @@ jobs:
           PY
           curl -sL "$(cat url.txt)" -o mcef.jar
           ls -la mcef.jar
-      - name: List classes and API
+      - name: API
         run: |
           mkdir x && cd x && unzip -q ../mcef.jar
-          find . -name '*.class' | grep -iv 'mixin\|\$' | head -80
-          cat fabric.mod.json | head -40
-          for c in $(find . -name '*.class' | grep -E 'MCEF(Browser)?\.class|MCEFApi|MCEFClient|Renderer|AudioHandler' | head -8); do
-            echo "=== $c"; javap -public -cp . "$(echo $c | sed 's|^\./||; s|\.class$||; s|/|.|g')"
-          done
+          mkdir j && cd j && for f in ../META-INF/jars/jcef-api*.jar; do unzip -qo $f; done && cd ..
+          for c in $(find net/dimaskama/mcef/api -name '*.class'); do n=$(echo $c | sed 's|\.class$||; s|/|.|g'); echo "=== $n"; javap -public -cp . "$n"; done
+          echo "=== CefBrowser/CefClient"; javap -public -cp j org.cef.browser.CefBrowser | grep -iE "audio|mute|loadURL|executeJavaScript|close|setFocus|wasResized|getURL|volume"
+          javap -public -cp j org.cef.CefClient | grep -iE "audio|addDisplayHandler|addLoadHandler"
+          echo "=== MCEFBrowserImpl"; javap -public -cp .:j net.dimaskama.mcef.impl.MCEFBrowserImpl
+          ls j/org/cef/handler | grep -i audio
