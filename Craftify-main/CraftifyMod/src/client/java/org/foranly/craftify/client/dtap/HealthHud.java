@@ -28,6 +28,7 @@ public final class HealthHud {
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
                 Identifier.fromNamespaceAndPath("craftify", "health_hud"),
                 (extractor, deltaTracker) -> {
+                    DTapEngine.pump(Minecraft.getInstance());
                     try {
                         render(extractor, deltaTracker.getGameTimeDeltaPartialTick(false));
                     } catch (Throwable ignored) {

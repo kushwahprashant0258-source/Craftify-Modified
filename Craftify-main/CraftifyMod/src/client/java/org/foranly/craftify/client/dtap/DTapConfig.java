@@ -27,6 +27,9 @@ public final class DTapConfig {
         public int gapTicks = 0;
         public boolean pingGapEnabled = false;
         public int[] pingGaps = {0, 0, 0, 0};
+        /** Gap between actions in SECONDS (e.g. 0.05 = 1 tick, 0.001 = 1 ms). */
+        public double gapSeconds = 0.0;
+        public double[] pingGapSeconds = {0.0, 0.0, 0.0, 0.0};
         public boolean returnToSlot = true;
         public FirstWeapon firstWeapon = FirstWeapon.AUTO;
         public ElytraOff elytraOff = ElytraOff.AUTO;
@@ -55,7 +58,7 @@ public final class DTapConfig {
     }
 
     /** Config format version; bumped when defaults change. */
-    public int version = 2;
+    public int version = 3;
     public Map<String, TypeSettings> types = new LinkedHashMap<>();
     public Auto auto = new Auto();
     public HealthBar healthBar = new HealthBar();
@@ -102,12 +105,15 @@ public final class DTapConfig {
             cfg.auto.targetName = "";
         }
         boolean oldGaps = cfg.version < 2;
-        cfg.version = 2;
+        boolean ticksToSeconds = cfg.version < 3;
+        cfg.version = 3;
         for (DTapType type : DTapType.values()) {
             TypeSettings s = cfg.types.computeIfAbsent(type.id, k -> {
                 TypeSettings fresh = new TypeSettings();
                 if (type == DTapType.FORCE_GRAPPLE) {
                     fresh.gapTicks = 3; // wind charge -> pearl
+                    fresh.gapSeconds = 0.15;
+                    fresh.pingGapSeconds = new double[]{0.15, 0.15, 0.15, 0.15};
                 }
                 return fresh;
             });
@@ -115,6 +121,18 @@ public final class DTapConfig {
                 // Older defaults were 1 tick, which was too slow: reset to 0.
                 s.gapTicks = 0;
                 s.pingGaps = new int[]{0, 0, 0, 0};
+            }
+            if (ticksToSeconds) {
+                s.gapSeconds = s.gapTicks * 0.05;
+                if (s.pingGaps != null && s.pingGaps.length == PING_BUCKET_START.length) {
+                    s.pingGapSeconds = new double[PING_BUCKET_START.length];
+                    for (int i = 0; i < s.pingGaps.length; i++) {
+                        s.pingGapSeconds[i] = s.pingGaps[i] * 0.05;
+                    }
+                }
+            }
+            if (s.pingGapSeconds == null || s.pingGapSeconds.length != PING_BUCKET_START.length) {
+                s.pingGapSeconds = new double[]{s.gapSeconds, s.gapSeconds, s.gapSeconds, s.gapSeconds};
             }
             if (s.pingGaps == null || s.pingGaps.length != PING_BUCKET_START.length) {
                 s.pingGaps = new int[]{s.gapTicks, s.gapTicks, s.gapTicks, s.gapTicks};
@@ -128,6 +146,33 @@ public final class DTapConfig {
         }
         // Sensible defaults for the follow-up slam: a single hit, no gap needed.
         return cfg;
+    }
+
+    /** Parses "0.05", "0,05", "50ms" or "0.05s" into seconds (0 - 2); invalid input gives -1. */
+    public static double parseSeconds(String text) {
+        if (text == null) {
+            return -1;
+        }
+        String t = text.trim().toLowerCase().replace(',', '.');
+        double factor = 1.0;
+        if (t.endsWith("ms")) {
+            t = t.substring(0, t.length() - 2).trim();
+            factor = 0.001;
+        } else if (t.endsWith("s")) {
+            t = t.substring(0, t.length() - 1).trim();
+        }
+        try {
+            double v = Double.parseDouble(t) * factor;
+            return Math.max(0.0, Math.min(2.0, v));
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    public static String formatSeconds(double seconds) {
+        String text = String.format(java.util.Locale.ROOT, "%.4f", seconds);
+        text = text.replaceAll("0+$", "").replaceAll("\\.$", "");
+        return text.isEmpty() ? "0" : text;
     }
 
     public TypeSettings of(DTapType type) {

@@ -7,7 +7,7 @@ import org.foranly.craftify.client.dtap.DTapConfig;
 import org.foranly.craftify.client.dtap.DTapEngine;
 import org.foranly.craftify.client.dtap.DTapType;
 
-/** Gap (in ticks) used for each ping range when "Use ping-based gap" is on. */
+/** Gap (in seconds) used for each ping range when "Use ping-based gap" is on. */
 public final class PingGapScreen extends DTapScreenBase {
 
     private final DTapType type;
@@ -24,8 +24,12 @@ public final class PingGapScreen extends DTapScreenBase {
         String[] labels = {"Under 50 ms", "50 - 99 ms", "100 - 149 ms", "150 ms and up"};
         for (int i = 0; i < labels.length; i++) {
             final int bucket = i;
-            stepper(labels[i], "ticks", () -> cfg.pingGaps[bucket], v -> cfg.pingGaps[bucket] = v, 0, 20,
-                    "Ticks between the hits when your ping is in this range (20 ticks = 1 second)");
+            textField(labels[i] + " (s)", () -> DTapConfig.formatSeconds(cfg.pingGapSeconds[bucket]), v -> {
+                double sec = DTapConfig.parseSeconds(v);
+                if (sec >= 0) {
+                    cfg.pingGapSeconds[bucket] = sec;
+                }
+            }, 10, "Seconds between the hits when your ping is in this range, e.g. 0.02 or 20ms");
         }
         int ping = DTapEngine.currentPing(Minecraft.getInstance());
         note("Your ping: " + ping + " ms (range " + (DTapConfig.bucketOf(ping) + 1) + ")");

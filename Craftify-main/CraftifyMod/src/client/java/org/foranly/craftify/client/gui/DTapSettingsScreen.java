@@ -25,8 +25,14 @@ public final class DTapSettingsScreen extends DTapScreenBase {
         toggle("Enabled", () -> cfg.enabled, v -> cfg.enabled = v, "Turn this d-tap on or off");
 
         if (type != DTapType.FOLLOW_UP) {
-            stepper(type.isGrapple() ? "Gap between throws" : "Gap between hits", "ticks", () -> cfg.gapTicks, v -> cfg.gapTicks = v, 0, 20,
-                    "20 ticks = 1 second. 0 = same tick. If the second hit does not pop, raise it by 1.");
+            textField(type.isGrapple() ? "Gap between throws (s)" : "Gap between hits (s)",
+                    () -> DTapConfig.formatSeconds(cfg.gapSeconds), v -> {
+                        double sec = DTapConfig.parseSeconds(v);
+                        if (sec >= 0) {
+                            cfg.gapSeconds = sec;
+                        }
+                    }, 10,
+                    "Seconds, decimals allowed: 0, 0.001 (1 ms), 0.05 (1 tick), 0.1. You can also type 50ms.");
             toggle("Use ping-based gap", () -> cfg.pingGapEnabled, v -> {
                 cfg.pingGapEnabled = v;
             }, "Use the gap saved for your current ping range instead of the fixed gap");
@@ -49,7 +55,7 @@ public final class DTapSettingsScreen extends DTapScreenBase {
 
         int ping = DTapEngine.currentPing(Minecraft.getInstance());
         note("Your ping: " + ping + " ms -> gap now "
-                + DTapEngine.effectiveGap(Minecraft.getInstance(), cfg) + " ticks");
+                + DTapConfig.formatSeconds(DTapEngine.effectiveGapSeconds(Minecraft.getInstance(), cfg)) + " s");
         backButton();
     }
 }

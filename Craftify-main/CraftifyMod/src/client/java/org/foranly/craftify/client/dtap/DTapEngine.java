@@ -47,23 +47,27 @@ public final class DTapEngine {
 
     /** One scripted action, run once {@code delay} ticks have passed since the previous step. */
     private static final class Step {
-        int delay;
+        final long delayNanos;
         final Consumer<Minecraft> action;
         /** Optional: wait (up to {@code timeout} ticks) until this is true before running. */
         Predicate<Minecraft> until;
-        int timeout;
+        long timeoutNanos;
 
-        Step(int delay, Consumer<Minecraft> action) {
-            this.delay = delay;
+        Step(long delayNanos, Consumer<Minecraft> action) {
+            this.delayNanos = delayNanos;
             this.action = action;
         }
 
         Step waitUntil(Predicate<Minecraft> condition, int timeoutTicks) {
             this.until = condition;
-            this.timeout = timeoutTicks;
+            this.timeoutNanos = timeoutTicks * 50_000_000L;
             return this;
         }
     }
+
+    /** When the previous step ran, and when the head step started waiting for its condition. */
+    private static long stepClock;
+    private static long waitStarted;
 
     private static final ArrayDeque<Step> QUEUE = new ArrayDeque<>();
     private static Entity target;
@@ -159,18 +163,39 @@ public final class DTapEngine {
             }
             return;
         }
-        // Run every step that is due; a delay of 0 runs in the same tick as the previous step.
+        pump(mc);
+    }
+
+    /**
+     * Runs every step that is due. Called every client tick and also every rendered frame,
+     * so gaps shorter than one tick (50 ms) are honoured as closely as the frame rate allows.
+     */
+    public static void pump(Minecraft mc) {
+        if (QUEUE.isEmpty() || mc.player == null || mc.gameMode == null || mc.level == null) {
+            return;
+        }
+        if (mc.screen != null) {
+            QUEUE.clear();
+            return;
+        }
         while (!QUEUE.isEmpty()) {
             Step head = QUEUE.peekFirst();
-            if (head.delay > 0) {
-                head.delay--;
+            long now = System.nanoTime();
+            if (now - stepClock < head.delayNanos) {
                 return;
             }
-            if (head.until != null && !head.until.test(mc) && head.timeout-- > 0) {
-                return;
+            if (head.until != null && !head.until.test(mc)) {
+                if (waitStarted == 0) {
+                    waitStarted = now;
+                }
+                if (now - waitStarted < head.timeoutNanos) {
+                    return;
+                }
             }
             QUEUE.pollFirst();
+            waitStarted = 0;
             head.action.accept(mc);
+            stepClock = System.nanoTime();
         }
     }
 
@@ -184,25 +209,37 @@ public final class DTapEngine {
      */
     private static void autoTick(Minecraft mc) {
         DTapConfig.Auto auto = DTapConfig.get().auto;
-        if (auto.targetName.isBlank()) {
-            if (!warnedNoTarget) {
-                warnedNoTarget = true;
-                say(mc, "Auto D-tap: type a target player name in its settings first.");
-            }
-            return;
-        }
         LocalPlayer player = mc.player;
         AbstractClientPlayer victim = null;
-        for (AbstractClientPlayer other : mc.level.players()) {
-            if (other != player && other.isAlive()
-                    && other.getGameProfile().name().equalsIgnoreCase(auto.targetName.trim())) {
-                victim = other;
-                break;
+        if (auto.targetName.isBlank()) {
+            // No name set: use the nearest other player.
+            double best = 64.0D * 64.0D;
+            for (AbstractClientPlayer other : mc.level.players()) {
+                if (other == player || !other.isAlive() || other.isSpectator()) {
+                    continue;
+                }
+                double d = other.distanceToSqr(player);
+                if (d < best) {
+                    best = d;
+                    victim = other;
+                }
             }
-        }
-        if (victim == null) {
-            status(mc, "player \"" + auto.targetName.trim() + "\" not found nearby");
-            return;
+            if (victim == null) {
+                status(mc, "no player nearby");
+                return;
+            }
+        } else {
+            for (AbstractClientPlayer other : mc.level.players()) {
+                if (other != player && other.isAlive()
+                        && other.getGameProfile().name().equalsIgnoreCase(auto.targetName.trim())) {
+                    victim = other;
+                    break;
+                }
+            }
+            if (victim == null) {
+                status(mc, "player \"" + auto.targetName.trim() + "\" not found nearby");
+                return;
+            }
         }
         boolean gliding = player.isFallFlying();
         double dist = Math.sqrt(victim.getBoundingBox().distanceToSqr(player.getEyePosition()));
@@ -297,7 +334,9 @@ public final class DTapEngine {
         target = living;
         originalSlot = mc.player.getInventory().getSelectedSlot();
         restoreSlot = cfg.returnToSlot;
-        int gap = effectiveGap(mc, cfg);
+        long gap = Math.round(effectiveGapSeconds(mc, cfg) * 1.0E9D);
+        stepClock = System.nanoTime();
+        waitStarted = 0;
 
         int density = densityMaceSlot(mc);
         switch (type) {
@@ -557,9 +596,9 @@ public final class DTapEngine {
         return info == null ? 0 : info.getLatency();
     }
 
-    public static int effectiveGap(Minecraft mc, DTapConfig.TypeSettings cfg) {
-        int gap = cfg.pingGapEnabled ? cfg.pingGaps[DTapConfig.bucketOf(currentPing(mc))] : cfg.gapTicks;
-        return Math.max(0, Math.min(40, gap));
+    public static double effectiveGapSeconds(Minecraft mc, DTapConfig.TypeSettings cfg) {
+        double gap = cfg.pingGapEnabled ? cfg.pingGapSeconds[DTapConfig.bucketOf(currentPing(mc))] : cfg.gapSeconds;
+        return Math.max(0.0, Math.min(2.0, gap));
     }
 
     private static void say(Minecraft mc, String text) {
