@@ -130,4 +130,28 @@ public final class CraftifyConfig {
         this.lyricsColor = value == null ? "FFFFFF" : value;
         save();
     }
+
+    // Spotify Web API credentials/tokens. The refresh token is stored locally in config/craftify.json.
+    private String spotifyClientId = "";
+    private String spotifyAccessToken = "";
+    private String spotifyRefreshToken = "";
+    private long spotifyTokenExpiresAt;
+
+    public String getSpotifyClientId() { return spotifyClientId == null ? "" : spotifyClientId; }
+
+    public void setSpotifyClientId(String value) {
+        this.spotifyClientId = value == null ? "" : value.trim();
+        save();
+    }
+
+    public String getSpotifyAccessToken() { return spotifyAccessToken == null ? "" : spotifyAccessToken; }
+    public String getSpotifyRefreshToken() { return spotifyRefreshToken == null ? "" : spotifyRefreshToken; }
+    public long getSpotifyTokenExpiresAt() { return spotifyTokenExpiresAt; }
+
+    public void setSpotifyTokens(String access, String refresh, long expiresAt) {
+        this.spotifyAccessToken = access == null ? "" : access;
+        this.spotifyRefreshToken = refresh == null ? "" : refresh;
+        this.spotifyTokenExpiresAt = expiresAt;
+        save();
+    }
 }

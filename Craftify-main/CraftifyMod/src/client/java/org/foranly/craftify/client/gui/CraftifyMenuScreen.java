@@ -29,7 +29,7 @@ public final class CraftifyMenuScreen extends Screen {
     @Override
     protected void init() {
         int centerX = this.width / 2;
-        int y = this.height / 2 - 92;
+        int y = this.height / 2 - 104;
 
         // General options
         this.sendingButton = Button.builder(sendingLabel(), button -> {
@@ -68,14 +68,20 @@ public final class CraftifyMenuScreen extends Screen {
                 .tooltip(Tooltip.create(Component.literal("Mace d-tap types, key binds, timing and the name tag health bar")))
                 .build();
 
+        Button spotifyButton = Button.builder(Component.literal("Spotify player"),
+                        button -> openScreen(new SpotifyScreen(this)))
+                .bounds(centerX - 100, y + 130, 200, 20)
+                .tooltip(Tooltip.create(Component.literal("Search Spotify and control playback inside Minecraft")))
+                .build();
+
         Button youtubeButton = Button.builder(Component.literal("YouTube audio"),
                         button -> openScreen(new YouTubeScreen(this)))
-                .bounds(centerX - 100, y + 130, 200, 20)
+                .bounds(centerX - 100, y + 156, 200, 20)
                 .tooltip(Tooltip.create(Component.literal("Play the audio of a YouTube link or search inside the game")))
                 .build();
 
         Button doneButton = Button.builder(Component.literal("Done"), button -> this.onClose())
-                .bounds(centerX - 100, y + 156, 200, 20)
+                .bounds(centerX - 100, y + 182, 200, 20)
                 .build();
 
         this.addRenderableWidget(this.sendingButton);
@@ -83,6 +89,7 @@ public final class CraftifyMenuScreen extends Screen {
         this.addRenderableWidget(lyricsButton);
         this.addRenderableWidget(searchButton);
         this.addRenderableWidget(maceButton);
+        this.addRenderableWidget(spotifyButton);
         this.addRenderableWidget(youtubeButton);
         this.addRenderableWidget(doneButton);
     }
