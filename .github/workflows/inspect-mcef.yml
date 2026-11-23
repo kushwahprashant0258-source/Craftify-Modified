@@ -1,0 +1,30 @@
+name: Inspect MCEF
+on:
+  push:
+    paths: ['.github/workflows/inspect-mcef.yml']
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - name: Download mcef-modern for 1.21.11
+        run: |
+          curl -s 'https://api.modrinth.com/v2/project/mcef-modern/version?game_versions=%5B%221.21.11%22%5D&loaders=%5B%22fabric%22%5D' -o v.json
+          python3 - <<'PY'
+          import json
+          v=json.load(open('v.json'))
+          for x in v[:3]: print(x['version_number'], x['id'], [f['filename'] for f in x['files']])
+          f=v[0]['files'][0]
+          open('url.txt','w').write(f['url'])
+          PY
+          curl -sL "$(cat url.txt)" -o mcef.jar
+          ls -la mcef.jar
+      - name: List classes and API
+        run: |
+          mkdir x && cd x && unzip -q ../mcef.jar
+          find . -name '*.class' | grep -iv 'mixin\|\$' | head -80
+          cat fabric.mod.json | head -40
+          for c in $(find . -name '*.class' | grep -E 'MCEF(Browser)?\.class|MCEFApi|MCEFClient|Renderer|AudioHandler' | head -8); do
+            echo "=== $c"; javap -public -cp . "$(echo $c | sed 's|^\./||; s|\.class$||; s|/|.|g')"
+          done
