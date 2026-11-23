@@ -24,9 +24,9 @@ public final class DTapConfig {
     public static final class TypeSettings {
         public boolean enabled = true;
         /** Ticks between the first hit and the second hit (20 ticks = 1 second). */
-        public int gapTicks = 1;
+        public int gapTicks = 0;
         public boolean pingGapEnabled = false;
-        public int[] pingGaps = {1, 1, 1, 1};
+        public int[] pingGaps = {0, 0, 0, 0};
         public boolean returnToSlot = true;
         public FirstWeapon firstWeapon = FirstWeapon.AUTO;
         public ElytraOff elytraOff = ElytraOff.AUTO;
@@ -54,6 +54,8 @@ public final class DTapConfig {
         public boolean showStatus = true;
     }
 
+    /** Config format version; bumped when defaults change. */
+    public int version = 2;
     public Map<String, TypeSettings> types = new LinkedHashMap<>();
     public Auto auto = new Auto();
     public HealthBar healthBar = new HealthBar();
@@ -99,6 +101,8 @@ public final class DTapConfig {
         if (cfg.auto.targetName == null) {
             cfg.auto.targetName = "";
         }
+        boolean oldGaps = cfg.version < 2;
+        cfg.version = 2;
         for (DTapType type : DTapType.values()) {
             TypeSettings s = cfg.types.computeIfAbsent(type.id, k -> {
                 TypeSettings fresh = new TypeSettings();
@@ -107,6 +111,11 @@ public final class DTapConfig {
                 }
                 return fresh;
             });
+            if (oldGaps && type != DTapType.FORCE_GRAPPLE) {
+                // Older defaults were 1 tick, which was too slow: reset to 0.
+                s.gapTicks = 0;
+                s.pingGaps = new int[]{0, 0, 0, 0};
+            }
             if (s.pingGaps == null || s.pingGaps.length != PING_BUCKET_START.length) {
                 s.pingGaps = new int[]{s.gapTicks, s.gapTicks, s.gapTicks, s.gapTicks};
             }
