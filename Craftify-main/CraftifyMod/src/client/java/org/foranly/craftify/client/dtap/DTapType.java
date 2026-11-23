@@ -8,7 +8,7 @@ public enum DTapType {
     FOLLOW_UP("follow_up", "Follow-up slam",
             "Density mace slam on the target you aim at (use right after it popped from anything)."),
     SPEAR_MACE("spear_mace", "Spear > Mace D-tap",
-            "Spear hit, then swap to the mace and smash. Spear charge is not automated."),
+            "TOGGLE: while falling it holds the spear and aims at the target, then the instant the spear hits it swaps to the mace and smashes."),
     AERIAL_GRAPPLE("aerial_grapple", "Aerial Grapple",
             "Both of you airborne: aim at the target, throw an Ender Pearl at/below it, "
                     + "then Mace hit as you land on it."),

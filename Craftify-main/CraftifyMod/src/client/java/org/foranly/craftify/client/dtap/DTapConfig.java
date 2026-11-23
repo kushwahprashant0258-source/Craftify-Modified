@@ -31,6 +31,8 @@ public final class DTapConfig {
         public double gapSeconds = 0.0;
         public double[] pingGapSeconds = {0.0, 0.0, 0.0, 0.0};
         public boolean returnToSlot = true;
+        /** Snap the view onto the target before each hit/throw of this d-tap. */
+        public boolean autoAim = true;
         public FirstWeapon firstWeapon = FirstWeapon.AUTO;
         public ElytraOff elytraOff = ElytraOff.AUTO;
     }

@@ -71,6 +71,7 @@ public final class DTapEngine {
 
     private static final ArrayDeque<Step> QUEUE = new ArrayDeque<>();
     private static Entity target;
+    private static DTapType currentType = DTapType.ELYTRA;
     private static int originalSlot;
     private static boolean restoreSlot;
 
@@ -141,6 +142,12 @@ public final class DTapEngine {
                 }
             }
         }
+        if (pressed == DTapType.SPEAR_MACE) {
+            pressed = null;
+            if (mc.screen == null) {
+                setSpearArmed(mc, !spearArmed);
+            }
+        }
         boolean toggled = false;
         while (autoKey.consumeClick()) {
             toggled = !toggled;
@@ -154,6 +161,9 @@ public final class DTapEngine {
         }
         if (autoCooldown > 0) {
             autoCooldown--;
+        }
+        if (QUEUE.isEmpty()) {
+            spearTick(mc);
         }
         if (QUEUE.isEmpty()) {
             if (pressed != null) {
@@ -196,6 +206,143 @@ public final class DTapEngine {
             waitStarted = 0;
             head.action.accept(mc);
             stepClock = System.nanoTime();
+        }
+    }
+
+    // ------------------------------------------------------------ spear mode
+
+    private enum SpearPhase { IDLE, CHARGING }
+
+    private static boolean spearArmed;
+    private static SpearPhase spearPhase = SpearPhase.IDLE;
+    private static int spearTicks;
+    private static int spearCooldown;
+    private static LivingEntity spearVictim;
+
+    public static boolean isSpearArmed() {
+        return spearArmed;
+    }
+
+    public static void setSpearArmed(Minecraft mc, boolean armed) {
+        spearArmed = armed;
+        if (!armed) {
+            endSpear(mc, true);
+        }
+        say(mc, "Spear > Mace D-tap " + (armed ? "ON (falls, spears, then maces)" : "OFF"));
+    }
+
+    private static LivingEntity pickAutoVictim(Minecraft mc) {
+        String name = DTapConfig.get().auto.targetName.trim();
+        LivingEntity best = null;
+        double bestDist = 64.0D * 64.0D;
+        for (AbstractClientPlayer other : mc.level.players()) {
+            if (other == mc.player || !other.isAlive() || other.isSpectator()) {
+                continue;
+            }
+            if (!name.isEmpty() && !other.getGameProfile().name().equalsIgnoreCase(name)) {
+                continue;
+            }
+            double d = other.distanceToSqr(mc.player);
+            if (d < bestDist) {
+                bestDist = d;
+                best = other;
+            }
+        }
+        return best;
+    }
+
+    private static void endSpear(Minecraft mc, boolean restoreSlotNow) {
+        if (spearPhase == SpearPhase.CHARGING && mc.player != null) {
+            mc.options.keyUse.setDown(false);
+            if (mc.gameMode != null) {
+                mc.gameMode.releaseUsingItem(mc.player);
+            }
+            if (restoreSlotNow && DTapConfig.get().of(DTapType.SPEAR_MACE).returnToSlot) {
+                mc.player.getInventory().setSelectedSlot(originalSlot);
+            }
+        }
+        spearPhase = SpearPhase.IDLE;
+        spearVictim = null;
+    }
+
+    /**
+     * Spear &gt; Mace d-tap (toggle). While armed: when you fall far enough it holds the spear and
+     * charges it at the target while aiming; the instant the target is hurt it releases, swaps to
+     * the mace and smashes as soon as the target is in reach.
+     */
+    private static void spearTick(Minecraft mc) {
+        if (!spearArmed) {
+            return;
+        }
+        if (spearCooldown > 0) {
+            spearCooldown--;
+        }
+        DTapConfig.TypeSettings cfg = DTapConfig.get().of(DTapType.SPEAR_MACE);
+        LocalPlayer player = mc.player;
+        if (spearPhase == SpearPhase.IDLE) {
+            if (spearCooldown > 0 || player.onGround() || player.isFallFlying()
+                    || player.fallDistance <= DTapConfig.get().auto.minFallBlocks) {
+                return;
+            }
+            LivingEntity victim = pickAutoVictim(mc);
+            if (victim == null) {
+                return;
+            }
+            int spear = findSlot(mc, s -> s.is(ItemTags.SPEARS), -1);
+            if (spear < 0) {
+                say(mc, "No spear in your hotbar.");
+                spearCooldown = 60;
+                return;
+            }
+            if (densityMaceSlot(mc) < 0) {
+                say(mc, "No mace in your hotbar.");
+                spearCooldown = 60;
+                return;
+            }
+            originalSlot = player.getInventory().getSelectedSlot();
+            player.getInventory().setSelectedSlot(spear);
+            spearVictim = victim;
+            spearPhase = SpearPhase.CHARGING;
+            spearTicks = 0;
+            if (cfg.autoAim) {
+                aimAt(player, victim, 100);
+            }
+            mc.gameMode.useItem(player, InteractionHand.MAIN_HAND);
+            mc.options.keyUse.setDown(true);
+            return;
+        }
+        // CHARGING
+        spearTicks++;
+        LivingEntity victim = spearVictim;
+        if (victim == null || !victim.isAlive() || player.onGround() || spearTicks > 160) {
+            endSpear(mc, true);
+            spearCooldown = 40;
+            return;
+        }
+        if (cfg.autoAim) {
+            aimAt(player, victim, 100);
+        }
+        if (!player.isUsingItem()) {
+            mc.gameMode.useItem(player, InteractionHand.MAIN_HAND);
+        }
+        mc.options.keyUse.setDown(true);
+        if (victim.hurtTime > 0 && player.distanceTo(victim) < 8.0F) {
+            // The spear connected: release, swap to the mace and finish it.
+            mc.options.keyUse.setDown(false);
+            mc.gameMode.releaseUsingItem(player);
+            spearPhase = SpearPhase.IDLE;
+            spearVictim = null;
+            spearCooldown = 40;
+            int mace = densityMaceSlot(mc);
+            target = victim;
+            currentType = DTapType.SPEAR_MACE;
+            restoreSlot = cfg.returnToSlot;
+            long gap = Math.round(effectiveGapSeconds(mc, cfg) * 1.0E9D);
+            stepClock = System.nanoTime();
+            waitStarted = 0;
+            QUEUE.add(new Step(gap, m -> hit(m, mace))
+                    .waitUntil(m -> target != null && m.player.distanceTo(target) <= m.player.entityInteractionRange() + 0.4D, 30));
+            QUEUE.add(new Step(1, DTapEngine::restore));
         }
     }
 
@@ -327,10 +474,13 @@ public final class DTapEngine {
             living = forced;
         } else if (mc.hitResult instanceof EntityHitResult hit && hit.getEntity() instanceof LivingEntity found) {
             living = found;
+        } else if (cfg.autoAim && (living = findAimedTarget(mc, 12.0D, 40.0D)) != null) {
+            // auto aim: nobody under the crosshair, so use the player closest to where you look
         } else {
             say(mc, "Aim at a player or mob first.");
             return;
         }
+        currentType = type;
         target = living;
         originalSlot = mc.player.getInventory().getSelectedSlot();
         restoreSlot = cfg.returnToSlot;
@@ -414,6 +564,9 @@ public final class DTapEngine {
             QUEUE.clear();
             restore(mc);
             return;
+        }
+        if (DTapConfig.get().of(currentType).autoAim) {
+            aimAt(mc.player, target, 100);
         }
         mc.player.getInventory().setSelectedSlot(slot);
         mc.gameMode.attack(mc.player, target);

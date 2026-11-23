@@ -20,7 +20,7 @@ public final class DTapSettingsScreen extends DTapScreenBase {
     @Override
     protected void init() {
         DTapConfig.TypeSettings cfg = DTapConfig.get().of(type);
-        begin(7);
+        begin(8);
 
         toggle("Enabled", () -> cfg.enabled, v -> cfg.enabled = v, "Turn this d-tap on or off");
 
@@ -50,6 +50,8 @@ public final class DTapSettingsScreen extends DTapScreenBase {
                     "Right-clicks a chestplate (offhand or hotbar) between the hits so the slam counts");
         }
 
+        toggle("Auto aim at target", () -> cfg.autoAim, v -> cfg.autoAim = v,
+                "Turns your view onto the target before each hit or throw of this d-tap");
         toggle("Return to original slot", () -> cfg.returnToSlot, v -> cfg.returnToSlot = v,
                 "Switch back to the slot you started on after the d-tap");
 
