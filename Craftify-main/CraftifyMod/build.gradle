@@ -31,6 +31,7 @@ fabricApi {
 
 repositories {
     mavenCentral()
+    maven { url = "https://maven.dimaskama.net/releases" }
 }
 
 dependencies {
@@ -39,6 +40,9 @@ dependencies {
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // MCEF Modern (embedded Chromium) is only needed at compile time; players install it as a separate mod.
+    modCompileOnly "net.dimaskama:mcef-modern:0.3.3+mc1.21.11.jcef146.0.10"
 
     // JNA is used by the existing native Windows/macOS process detectors.
     include(implementation("net.java.dev.jna:jna:5.17.0"))
